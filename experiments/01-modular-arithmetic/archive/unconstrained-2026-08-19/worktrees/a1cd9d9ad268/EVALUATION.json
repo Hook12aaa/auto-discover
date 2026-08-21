@@ -1,0 +1,110 @@
+{
+  "experiment_hash": "a1cd9d9ad268",
+  "genome_spec": "poincare_fold_compositor",
+  "verdict": "REJECT",
+  "evaluated_at": "2026-08-19",
+  "seed": 42,
+  "pre_registered_metrics": {
+    "primary": {
+      "test_accuracy_modular_addition": {
+        "candidate": 0.01908169350029815,
+        "baseline": 0.4531902074813843,
+        "ratio_to_baseline": 0.0421,
+        "success_threshold": 0.99,
+        "met_threshold": false
+      }
+    },
+    "secondary": {
+      "compute_to_threshold_ratio": {
+        "candidate": 1.0,
+        "baseline": null,
+        "note": "Neither candidate nor baseline reached 99% threshold within budget"
+      },
+      "samples_to_threshold_accuracy": {
+        "candidate": 16680000,
+        "baseline": null,
+        "note": "Candidate consumed full budget without reaching threshold"
+      },
+      "gradient_health_mean_norm": {
+        "candidate": 0.005218364843001057,
+        "baseline": 0.006167269050045132,
+        "note": "Gradient norms healthy but reflecting a plateau, not productive learning"
+      },
+      "param_efficiency_params_per_accuracy_point": {
+        "candidate": 1744.08,
+        "baseline": 8937.15,
+        "note": "Misleading ratio — candidate has fewer params but near-zero accuracy"
+      }
+    }
+  },
+  "success_criteria_evaluation": {
+    "criterion_1": {
+      "text": "Reaches 99% test accuracy on modular addition (mod p for p in [5, 31]) using less than 50% of the baseline's compute-to-threshold",
+      "met": false,
+      "evidence": "Test accuracy 1.9% — 97 percentage points below the 99% threshold"
+    },
+    "criterion_2": {
+      "text": "Maintains performance across all tested primes without per-prime tuning",
+      "met": false,
+      "evidence": "Performance below random chance for 8 of 9 primes; only p=7 marginally above random (16% vs 14.3% chance)"
+    },
+    "criterion_3": {
+      "text": "Achieves higher test accuracy per FLOP than the baseline across the full compute budget",
+      "met": false,
+      "evidence": "Candidate 1.9% test accuracy vs baseline 45.3% — baseline is 23.7x better"
+    }
+  },
+  "failure_criteria_evaluation": {
+    "criterion_1": {
+      "text": "Gradient norms exceed 50 for 3 consecutive checkpoints",
+      "triggered": false,
+      "evidence": "Maximum gradient norm was 0.079 at epoch 1; norms declined to 0.005 by epoch 10000"
+    },
+    "criterion_2": {
+      "text": "Test accuracy does not exceed 60% after consuming 50% of the compute budget",
+      "triggered": true,
+      "evidence": "Test accuracy at epoch 5000 (50% budget): 2.2%, far below the 60% threshold"
+    },
+    "criterion_3": {
+      "text": "Loss does not decrease below initial loss after consuming 20% of the compute budget",
+      "triggered": false,
+      "evidence": "Initial loss 3.779, loss at epoch 2000 (20% budget): 2.688 — loss did decrease"
+    }
+  },
+  "training_forensics": {
+    "trajectory_classification": "early_plateau",
+    "observations": {
+      "plateau_onset_epoch": 100,
+      "plateau_description": "Model reached ~20% train accuracy and ~2% test accuracy by epoch 100. For the remaining 9,900 epochs, both metrics oscillated within noise with zero improvement trend.",
+      "loss_trajectory": "Dropped from 3.78 to 2.69 by epoch 100, then flatlined at ~2.70 for the remaining 9,900 epochs",
+      "gradient_collapse": "Gradient norms declined monotonically from 0.079 to 0.005, indicating vanishing learning signal",
+      "train_test_gap": "Train accuracy (~20%) exceeded test accuracy (~2%) by 10x, indicating the model memorized a subset of training patterns without learning generalizable modular structure",
+      "per_prime_analysis": "8 of 9 primes below random chance. The model appears to have learned a biased but non-functional output distribution rather than modular arithmetic."
+    },
+    "per_prime_vs_random_chance": {
+      "5": {"accuracy": 0.0769, "random_chance": 0.2000, "ratio": 0.38, "status": "BELOW_RANDOM"},
+      "7": {"accuracy": 0.1600, "random_chance": 0.1429, "ratio": 1.12, "status": "ABOVE_RANDOM"},
+      "11": {"accuracy": 0.0164, "random_chance": 0.0909, "ratio": 0.18, "status": "BELOW_RANDOM"},
+      "13": {"accuracy": 0.0235, "random_chance": 0.0769, "ratio": 0.31, "status": "BELOW_RANDOM"},
+      "17": {"accuracy": 0.0207, "random_chance": 0.0588, "ratio": 0.35, "status": "BELOW_RANDOM"},
+      "19": {"accuracy": 0.0276, "random_chance": 0.0526, "ratio": 0.52, "status": "BELOW_RANDOM"},
+      "23": {"accuracy": 0.0302, "random_chance": 0.0435, "ratio": 0.69, "status": "BELOW_RANDOM"},
+      "29": {"accuracy": 0.0166, "random_chance": 0.0345, "ratio": 0.48, "status": "BELOW_RANDOM"},
+      "31": {"accuracy": 0.0021, "random_chance": 0.0323, "ratio": 0.06, "status": "BELOW_RANDOM"}
+    }
+  },
+  "comparison_to_baseline": {
+    "test_accuracy": {"candidate": 0.0191, "baseline": 0.4532, "delta": -0.4341, "candidate_ratio": 0.042},
+    "train_accuracy": {"candidate": 0.2064, "baseline": 1.0, "delta": -0.7936},
+    "total_parameters": {"candidate": 3328, "baseline": 405023, "ratio": 0.008},
+    "training_completed": {"candidate": true, "baseline": true}
+  },
+  "reject_reasons": [
+    "Test accuracy 1.9% is 23.7x worse than baseline (45.3%)",
+    "Failure criterion #2 triggered: test accuracy 2.2% at 50% budget, threshold is 60%",
+    "No success criteria met: 0 of 3",
+    "Model performs below random chance on 8 of 9 tested primes",
+    "Complete training stagnation from epoch 100 onward — the piecewise fold architecture failed to learn modular arithmetic structure",
+    "20% train accuracy suggests partial memorization of training data distribution without learning the underlying modular operation"
+  ]
+}

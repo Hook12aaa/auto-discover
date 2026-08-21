@@ -1,0 +1,92 @@
+{
+  "experiment_hash": "1b8b400dda1c",
+  "architecture_name": "torus_rotation_compositor_v2",
+  "verdict": "REJECT",
+  "verdict_reason": "Pre-registered failure criterion triggered: gradient norms exceed 50 for 3 consecutive checkpoints. Observed 9 consecutive checkpoints (epochs 2400-3200) with gradient norms ranging from 65 to 763, caused by a training collapse event at epoch 2400.",
+  "metrics": {
+    "primary": {
+      "test_accuracy_modular_addition": {
+        "value": 0.9970,
+        "baseline": 0.4532,
+        "vs_baseline": "candidate 2.20x baseline accuracy"
+      }
+    },
+    "secondary": {
+      "compute_to_threshold_ratio": {
+        "value": 5.314248e-07,
+        "baseline": null,
+        "vs_baseline": "baseline never reached threshold"
+      },
+      "samples_to_threshold_accuracy": {
+        "value": 500400,
+        "baseline": null,
+        "vs_baseline": "baseline never reached threshold"
+      },
+      "gradient_health_mean_norm": {
+        "value": 2710.59,
+        "baseline": 0.006167,
+        "vs_baseline": "candidate mean gradient 439,554x higher than baseline due to collapse event"
+      },
+      "param_efficiency_params_per_accuracy_point": {
+        "value": 1.775,
+        "baseline": 8937.15,
+        "vs_baseline": "candidate 5,034x more parameter-efficient"
+      }
+    }
+  },
+  "failure_criteria": {
+    "gradient_norms_exceed_50_for_3_consecutive": {
+      "triggered": true,
+      "detail": "9 consecutive checkpoints (epochs 2400-3200) exceeded threshold. Peak gradient norm: 763.16 at epoch 2400."
+    },
+    "test_accuracy_below_60pct_at_50pct_budget": {
+      "triggered": false,
+      "detail": "Test accuracy at 50% budget (epoch 5000): 99.22%"
+    },
+    "loss_above_initial_at_20pct_budget": {
+      "triggered": false,
+      "detail": "Loss at 20% budget (epoch 2000): 6.46e-05, well below initial loss 3.975"
+    }
+  },
+  "success_criteria": {
+    "reaches_99pct_accuracy_with_less_compute": {
+      "satisfied": true,
+      "detail": "99.70% accuracy achieved. Baseline never reached 99%. Candidate 15,103x more FLOP-efficient."
+    },
+    "maintains_performance_across_all_primes": {
+      "satisfied": false,
+      "detail": "p=5 (92.3%) and p=7 (88.0%) are significantly below the overall 99.70%. p=7 below 90% threshold."
+    },
+    "higher_accuracy_per_flop_than_baseline": {
+      "satisfied": true,
+      "detail": "5.63e-11 acc/FLOP vs baseline 3.73e-15 acc/FLOP (15,103x more efficient)"
+    }
+  },
+  "training_diagnostics": {
+    "collapse_event": {
+      "onset_epoch": 2400,
+      "recovery_epoch": 3300,
+      "duration_epochs": 900,
+      "duration_checkpoints": 9,
+      "pre_collapse_accuracy": 1.0,
+      "nadir_accuracy": 0.2683,
+      "peak_gradient_norm": 763.16,
+      "recovery_complete": true,
+      "final_accuracy": 0.9970
+    },
+    "per_prime_weakness": {
+      "p5_accuracy": 0.9231,
+      "p7_accuracy": 0.8800,
+      "observation": "Small primes underperform -- opposite of K=32 variant. K=16 embedding may lack resolution for small-prime modular structure."
+    },
+    "convergence_type": "collapse_recovery",
+    "accuracy_trajectory": "rapid_convergence_to_100pct_by_epoch_600, collapse_at_2400, slow_recovery_5000+_epochs, plateau_at_99.7pct"
+  },
+  "comparison_to_k32_variant": {
+    "accuracy": "99.70% vs 99.94% (K=32 superior)",
+    "params": "177 vs 353 (K=16 50% fewer params)",
+    "stability": "K=16 collapsed; K=32 did not (if applicable)",
+    "small_primes": "K=16 weak on p=5,7; K=32 strong on small primes"
+  },
+  "diminishing_returns_signal": "K=16 shows clear diminishing returns vs K=32 in the geometric class: lower accuracy, training instability, and small-prime weakness despite halved parameter count. This is evidence for within-class exhaustion of the torus_rotation_compositor family."
+}

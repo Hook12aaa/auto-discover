@@ -1,0 +1,38 @@
+{
+  "verdict": "KEEP",
+  "experiment_hash": "03d7c5957a78",
+  "architecture_name": "torus_rotation_compositor",
+  "parameter_efficiency": {
+    "variant_params": 353,
+    "baseline_params": 405023,
+    "ratio": 0.000872,
+    "accuracy_per_param_variant": 0.002831,
+    "accuracy_per_param_baseline": 1.119e-06,
+    "efficiency_multiplier": 2531
+  },
+  "pareto": {
+    "dominates_baseline": true,
+    "dominates_on_accuracy_vs_params": true,
+    "dominates_on_accuracy_vs_flops": true,
+    "front_updated": true,
+    "points_removed": [],
+    "front_position": "Initializes the Pareto front as the sole ACCEPTed variant. Strictly dominates the baseline on both (test_accuracy, 1/params) and (test_accuracy, 1/flops) dimensions. Variant: (0.9994, 1/353) vs Baseline: (0.4532, 1/405023).",
+    "front_after": [
+      {
+        "hash": "03d7c5957a78",
+        "architecture": "torus_rotation_compositor",
+        "test_accuracy": 0.999403715133667,
+        "params": 353,
+        "flops": 35328240000
+      }
+    ]
+  },
+  "spec_class": {
+    "fingerprint": "frequency_circular_embed+geodesic_classify+prime_harmonic_gate+rotation_compose|sequential|embed->compose->gate->classify",
+    "status": "EXPLORING",
+    "depth": 1,
+    "notes": "First variant in this geometric/circular spec class. The architecture directly exploits the algebraic structure of modular addition via torus rotations. Class is EXPLORING — one data point cannot determine exhaustion."
+  },
+  "stale_pathway": false,
+  "strategic_notes": "Exceptionally strong first ACCEPTed variant. The torus_rotation_compositor achieves 99.94% test accuracy with 353 parameters versus the baseline's 45.32% with 405,023 parameters — a 2,531x improvement in parameter efficiency per accuracy point, and 3,443x fewer FLOPs. The architecture exploits the mathematical structure of modular addition directly: frequency-domain circular embeddings and rotation composition map the problem's group structure into the model's geometry. Fast monotonic convergence (99% at epoch 500, 5% of budget) with no grokking dynamics. Per-prime uniformity is 5.8x tighter than baseline (std dev 0.013 vs 0.076). Late perturbation at epochs 7600-8600 self-resolved. This initializes the Pareto front and establishes the geometric/circular spec class as a high-value search direction."
+}

@@ -1,0 +1,122 @@
+{
+  "experiment_hash": "ba7a19bb849e",
+  "architecture": "syndrome_refinement_decoder_v2",
+  "fix_applied": "scores_normalized = scores / sqrt(224) before feedback",
+  "device": "mps",
+  "verdict": "COMPONENT_VALIDATED",
+  "gates": {
+    "gradient_flow": {
+      "gate": "gradient_flow",
+      "pass": true,
+      "details": {
+        "embed_ab.weight": {
+          "has_gradient": true,
+          "grad_max": 0.009227799251675606,
+          "grad_mean": 0.0003161278727930039
+        },
+        "embed_p.weight": {
+          "has_gradient": true,
+          "grad_max": 0.06258899718523026,
+          "grad_mean": 0.0022213307674974203
+        },
+        "W_acc.weight": {
+          "has_gradient": true,
+          "grad_max": 0.06524688750505447,
+          "grad_mean": 0.006865234579890966
+        },
+        "W_acc.bias": {
+          "has_gradient": true,
+          "grad_max": 0.017767667770385742,
+          "grad_mean": 0.005031950306147337
+        },
+        "compress_1.weight": {
+          "has_gradient": true,
+          "grad_max": 0.10665763914585114,
+          "grad_mean": 0.004099709913134575
+        },
+        "compress_1.bias": {
+          "has_gradient": true,
+          "grad_max": 0.052734799683094025,
+          "grad_mean": 0.00891820341348648
+        },
+        "compress_2.weight": {
+          "has_gradient": true,
+          "grad_max": 0.057158537209033966,
+          "grad_mean": 0.0029288381338119507
+        },
+        "compress_2.bias": {
+          "has_gradient": true,
+          "grad_max": 0.04243089258670807,
+          "grad_mean": 0.007190195843577385
+        },
+        "compress_3.weight": {
+          "has_gradient": true,
+          "grad_max": 0.0731140524148941,
+          "grad_mean": 0.002373285358771682
+        },
+        "compress_3.bias": {
+          "has_gradient": true,
+          "grad_max": 0.03281174972653389,
+          "grad_mean": 0.005806813947856426
+        },
+        "W_synth.weight": {
+          "has_gradient": true,
+          "grad_max": 0.27738073468208313,
+          "grad_mean": 0.004706740844994783
+        },
+        "W_synth.bias": {
+          "has_gradient": true,
+          "grad_max": 0.08598615229129791,
+          "grad_mean": 0.0050179362297058105
+        },
+        "W_fb.weight": {
+          "has_gradient": true,
+          "grad_max": 0.02585006318986416,
+          "grad_mean": 0.002403142862021923
+        },
+        "W_fb.bias": {
+          "has_gradient": true,
+          "grad_max": 0.035693783313035965,
+          "grad_mean": 0.0033319813665002584
+        }
+      },
+      "dead_params": [],
+      "total_params": 14,
+      "live_params": 14
+    },
+    "output_range": {
+      "gate": "output_range",
+      "pass": true,
+      "min_output": 9.932641983032227,
+      "max_output": 22.727500915527344,
+      "bound": [
+        -100,
+        100
+      ]
+    },
+    "toy_convergence": {
+      "gate": "toy_convergence",
+      "pass": true,
+      "p": 5,
+      "epochs": 500,
+      "target_accuracy": 0.5,
+      "best_accuracy": 1.0,
+      "final_accuracy": 1.0,
+      "final_loss": 3.72353897546418e-05,
+      "param_count": 69536,
+      "training_time_seconds": 4.68,
+      "accuracy_at_checkpoints": {
+        "50": 1.0,
+        "100": 1.0,
+        "150": 1.0,
+        "200": 1.0,
+        "250": 1.0,
+        "300": 1.0,
+        "350": 1.0,
+        "400": 1.0,
+        "450": 1.0,
+        "500": 1.0
+      }
+    }
+  }
+}

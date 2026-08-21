@@ -1,0 +1,84 @@
+{
+  "spec_name": "cayley_algebra_compositor",
+  "experiment_hash": "09810afd22c2",
+  "gate1_gradient_flow": {
+    "verdict": "PASS",
+    "details": {
+      "element_state_embed.weight": {
+        "shape": [
+          31,
+          2
+        ],
+        "grad_max": 0.05646852031350136,
+        "grad_min_nonzero": 0.00030401634285226464,
+        "has_nan": false,
+        "has_inf": false,
+        "status": "OK"
+      },
+      "action_orbit_embed.weight": {
+        "shape": [
+          31,
+          2
+        ],
+        "grad_max": 0.03542601317167282,
+        "grad_min_nonzero": 0.0006580104236491024,
+        "has_nan": false,
+        "has_inf": false,
+        "status": "OK"
+      },
+      "readout.weight": {
+        "shape": [
+          5,
+          2
+        ],
+        "grad_max": 0.16263347864151,
+        "grad_min_nonzero": 0.017104841768741608,
+        "has_nan": false,
+        "has_inf": false,
+        "status": "OK"
+      },
+      "readout.bias": {
+        "shape": [
+          5
+        ],
+        "grad_max": 0.19889572262763977,
+        "grad_min_nonzero": 0.028941236436367035,
+        "has_nan": false,
+        "has_inf": false,
+        "status": "OK"
+      }
+    }
+  },
+  "gate2_output_range": {
+    "verdict": "PASS",
+    "n_samples": 1000,
+    "output_min": -3.6221933364868164,
+    "output_max": 3.237067699432373,
+    "output_variance": 0.5642389059066772,
+    "has_nan": false,
+    "has_inf": false
+  },
+  "gate3_toy_convergence": {
+    "verdict": "PASS",
+    "initial_loss": 1.630661964416504,
+    "final_loss": 0.4548921585083008,
+    "final_accuracy": 0.6800000071525574,
+    "max_accuracy": 0.7200000286102295,
+    "loss_decreased": true,
+    "n_epochs": 500,
+    "n_examples": 25,
+    "loss_at_checkpoints": {
+      "epoch_0": 1.630661964416504,
+      "epoch_100": 0.9422122240066528,
+      "epoch_250": 0.5456497669219971,
+      "epoch_499": 0.4548921585083008
+    },
+    "acc_at_checkpoints": {
+      "epoch_0": 0.23999999463558197,
+      "epoch_100": 0.6000000238418579,
+      "epoch_250": 0.7200000286102295,
+      "epoch_499": 0.6800000071525574
+    }
+  },
+  "overall_verdict": "COMPONENT_VALIDATED"
+}

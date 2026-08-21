@@ -1,0 +1,30 @@
+{
+  "experiment_hash": "98308054c3b9",
+  "genome_spec": "crt_channel_decomposer",
+  "seed": 42,
+  "total_parameters": 1383,
+  "epochs_trained": 10000,
+  "wall_clock_minutes": 11.11,
+  "test_accuracy_modular_addition": 0.03876,
+  "train_accuracy": 0.154676,
+  "train_loss": 2.821621,
+  "test_loss": 9.545642,
+  "compute_to_threshold_ratio": null,
+  "samples_to_threshold_accuracy": null,
+  "gradient_health_mean_norm": 0.006574,
+  "param_efficiency_params_per_accuracy_point": 356.814,
+  "per_prime_test_accuracy": {
+    "5": 0.538462,
+    "7": 0.28,
+    "11": 0.04918,
+    "13": 0.2,
+    "17": 0.048276,
+    "19": 0.022099,
+    "23": 0.026415,
+    "29": 0.021378,
+    "31": 0.008316
+  },
+  "learning_rate": 0.1,
+  "weight_decay": 0.0006931471805599453,
+  "device": "mps"
+}

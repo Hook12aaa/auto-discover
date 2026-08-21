@@ -1,0 +1,42 @@
+{
+  "spec_version": "2.0",
+  "architecture_name": "cayley_algebra_compositor",
+  "novel_component": {
+    "type": "modular_arithmetic",
+    "class": "group_algebra_hadamard",
+    "ops_used": [
+      "element_state_embed",
+      "action_orbit_embed",
+      "cayley_product",
+      "quotient_fiber_readout"
+    ]
+  },
+  "composition": {
+    "strategy": "parallel_to_sequential",
+    "hybrid_ratio": 1.0,
+    "num_layers": 3,
+    "layer_arrangement": [
+      {
+        "layer": 1,
+        "op": "element_state_embed + action_orbit_embed",
+        "description": "a->s_a R^d, b->g_b R^d. Dual embedding tables, 31*d params each."
+      },
+      {
+        "layer": 2,
+        "op": "cayley_product",
+        "description": "z = s_a * g_b (Hadamard/element-wise product). Zero params."
+      },
+      {
+        "layer": 3,
+        "op": "quotient_fiber_readout",
+        "description": "Per prime p_i: logits_i = W_i @ z + b_i. Select channel matching input prime."
+      }
+    ]
+  },
+  "hyperparameters": {
+    "embedding_dim": 2,
+    "num_primes": 9,
+    "max_val": 31,
+    "estimated_parameters": 434
+  }
+}

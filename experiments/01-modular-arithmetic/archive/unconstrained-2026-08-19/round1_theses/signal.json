@@ -1,0 +1,33 @@
+{
+  "problem_restatements": [
+    "Harmonic analysis on cyclic groups: characters chi_k(n) = exp(2*pi*i*k*n/p) satisfy chi_k(a+b) = chi_k(a)*chi_k(b). Decompose inputs into character coefficients, combine via homomorphism (pointwise complex multiplication), reconstruct output via inverse character projection.",
+    "Periodic demodulation with variable period: s = a+b is a natural number; (a+b) mod p extracts fractional phase relative to period p. A tunable periodic decomposition across 9 periods."
+  ],
+  "analogy_domain": "signal processing / harmonic analysis",
+  "analogy": "Matched-filter correlator bank tuned to current period p. Characters are group homomorphisms — addition in group domain becomes pointwise multiplication in frequency domain (finite-group convolution theorem).",
+  "plan": {
+    "ops": [
+      "prime_modulator: learned lookup table mapping each prime p to K frequency values mu_{k,p}. 9*K parameters, initialized to k/p.",
+      "harmonic_projector: maps integer n to 2K-dim vector via (cos(2*pi*n*mu_{k,p}), sin(2*pi*n*mu_{k,p})). No learned parameters. Applied independently to a and b.",
+      "phase_adder: pairwise complex multiplication of two 2K-vectors. No learned parameters. Hardwires chi_k(a+b) = chi_k(a)*chi_k(b).",
+      "amplitude_weighter: scales each channel k by learned weight w_k. K parameters.",
+      "correlation_classifier: for each candidate c, computes score via inverse character projection. Scores for c >= p masked. No additional learned parameters."
+    ],
+    "composition_strategy": "sequential pipeline with parallel fork for two inputs",
+    "layer_arrangement": "prime_modulator(p) -> harmonic_projector(a,freqs) || harmonic_projector(b,freqs) -> phase_adder -> amplitude_weighter -> correlation_classifier -> masked logits",
+    "reasoning": "The baseline failure (fast memorization, slow generalization) is missing inductive bias. Harmonic architecture builds character decomposition into the graph. Only ~144 frequency params + 16 amplitude weights needed. Homomorphism hardwired into phase_adder."
+  },
+  "expected_outcome": "Test accuracy >90% within 5000 epochs. Immediate generalization because architecture encodes group homomorphism. ~160 total parameters vs baseline's 405k.",
+  "falsification": "If test accuracy below 80% at epoch 5000: harmonic bias insufficient. If small primes don't reach 95%+ by epoch 1000: thesis is wrong. If training accuracy below 95% at epoch 2000: pipeline too rigid.",
+  "look_back": [
+    "If mu_{k,p} = k/p exactly, the composition computes DFT, character multiplication, and inverse DFT — producing a perfect delta at (a+b) mod p.",
+    "Generalizes to any finite abelian group operation.",
+    "Extreme parameter efficiency (~160 vs 405k) forces algebraic structure learning.",
+    "Primary risk: optimization difficulty from periodicity of cos. Mitigate with k/p initialization."
+  ],
+  "fingerprint": {
+    "sorted_ops": ["amplitude_weighter", "correlation_classifier", "harmonic_projector", "phase_adder", "prime_modulator"],
+    "composition_strategy": "sequential_parallel_fork",
+    "layer_arrangement": "modulate->project_parallel->add_phase->weight->classify"
+  }
+}

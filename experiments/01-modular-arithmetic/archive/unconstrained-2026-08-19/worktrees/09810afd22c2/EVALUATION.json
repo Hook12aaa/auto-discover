@@ -1,0 +1,94 @@
+{
+  "experiment_hash": "09810afd22c2",
+  "spec_name": "cayley_algebra_compositor",
+  "verdict": "REJECT",
+  "timestamp": "2026-08-19T00:00:00Z",
+  "pre_registered_metrics": {
+    "test_accuracy_modular_addition": {
+      "candidate": 0.08169350029815146,
+      "baseline": 0.4531902074813843,
+      "comparison": "candidate is 82% worse than baseline (0.082 vs 0.453)"
+    },
+    "compute_to_threshold_ratio": {
+      "candidate": null,
+      "baseline": null,
+      "comparison": "neither reached 99% threshold"
+    },
+    "samples_to_threshold_accuracy": {
+      "candidate": null,
+      "baseline": null,
+      "comparison": "neither reached 99% threshold"
+    },
+    "gradient_health_mean_norm": {
+      "candidate": 0.009143210450565676,
+      "baseline": 0.006167269050045132,
+      "comparison": "candidate gradient norms slightly higher but both healthy"
+    },
+    "param_efficiency_params_per_accuracy_point": {
+      "candidate": 72.0987591240876,
+      "baseline": 8937.152509338744,
+      "comparison": "candidate has fewer params per accuracy point (589 params total) but only because accuracy is so low the ratio is misleading"
+    }
+  },
+  "success_criteria": {
+    "reaches_99pct_test_accuracy_with_less_compute": {
+      "passed": false,
+      "detail": "Test accuracy reached only 8.17% (best: 8.59%). Nowhere near 99%."
+    },
+    "maintains_performance_across_all_primes": {
+      "passed": false,
+      "detail": "Per-prime accuracy ranges from 5.6% (p=31) to 46.2% (p=5). Performance collapses for larger primes, indicating memorization of small-prime examples rather than learning modular structure."
+    },
+    "higher_test_accuracy_per_flop": {
+      "passed": false,
+      "detail": "Candidate achieved 8.17% vs baseline 45.3%. Candidate is strictly worse at every compute level."
+    }
+  },
+  "failure_criteria": {
+    "gradient_norms_exceed_50_for_3_consecutive": {
+      "triggered": false,
+      "detail": "Max gradient norm was 0.216. Gradients stayed well below 50 throughout."
+    },
+    "test_accuracy_below_60pct_at_50pct_budget": {
+      "triggered": true,
+      "detail": "At epoch 5000 (50% of 10000 budget), test accuracy was 6.92%. This is below 60% and triggers the failure criterion."
+    },
+    "loss_above_initial_at_20pct_budget": {
+      "triggered": false,
+      "detail": "Initial train loss 3.381, at epoch 2000 (20% budget) train loss was 2.517. Loss did decrease below initial value."
+    }
+  },
+  "training_dynamics": {
+    "classification": "plateau",
+    "detail": "Model plateaued at ~17% train accuracy and ~8% test accuracy within the first 200 epochs and showed no improvement over the remaining 9800 epochs. No grokking, no delayed generalization, no phase transition observed.",
+    "train_accuracy_final": 0.17146282973621102,
+    "test_accuracy_final": 0.08169350029815146,
+    "best_test_accuracy": 0.08586762075134168,
+    "best_test_epoch": 500,
+    "initial_grad_norm": 0.09303565361492498,
+    "mean_grad_norm": 0.009143210450565676,
+    "learning_rate": 1.0,
+    "total_params": 589,
+    "epochs_used": 10000,
+    "wall_clock_minutes": 7.38
+  },
+  "per_prime_analysis": {
+    "5": {"test_acc": 0.462, "status": "partial memorization (near 1/5 random = 20%, above random)"},
+    "7": {"test_acc": 0.360, "status": "partial memorization (above 1/7 random = 14.3%)"},
+    "11": {"test_acc": 0.098, "status": "near random (1/11 = 9.1%)"},
+    "13": {"test_acc": 0.141, "status": "near random (1/13 = 7.7%)"},
+    "17": {"test_acc": 0.069, "status": "near random (1/17 = 5.9%)"},
+    "19": {"test_acc": 0.099, "status": "near random (1/19 = 5.3%)"},
+    "23": {"test_acc": 0.075, "status": "near random (1/23 = 4.3%)"},
+    "29": {"test_acc": 0.069, "status": "near random (1/29 = 3.4%)"},
+    "31": {"test_acc": 0.056, "status": "near random (1/31 = 3.2%)"}
+  },
+  "rejection_reasons": [
+    "Test accuracy 8.17% is 82% below baseline (45.3%) — the architecture cannot learn modular addition",
+    "Failure criterion triggered: test accuracy 6.92% at 50% compute budget, far below the 60% threshold",
+    "No success criteria met — not even partial progress toward any criterion",
+    "Training plateaued within first 200 epochs with no recovery over remaining 9800 epochs",
+    "Per-prime analysis shows near-random performance for all primes >= 11, indicating the 589-param model memorized a few small-prime examples rather than learning algebraic structure",
+    "Initial gradient norms were very small (0.093), and LR was capped at 1.0, suggesting the Cayley algebra compositor architecture produces weak gradient signals that prevent meaningful learning"
+  ]
+}

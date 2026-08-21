@@ -1,0 +1,46 @@
+{
+  "spec_version": "2.0",
+  "architecture_name": "crt_channel_decomposer",
+  "novel_component": {
+    "type": "modular_arithmetic",
+    "class": "crt_orthogonal_decomposition",
+    "ops_used": [
+      "crt_orthogonal_decomposer",
+      "modular_fold_accumulator",
+      "coset_cardinality_readout"
+    ]
+  },
+  "composition": {
+    "strategy": "parallel_independent_channels",
+    "hybrid_ratio": 1.0,
+    "num_layers": 4,
+    "layer_arrangement": [
+      {
+        "layer": 1,
+        "op": "shared_embedding",
+        "description": "integers 0-30 -> d-dim vectors, shared across primes"
+      },
+      {
+        "layer": 2,
+        "op": "crt_orthogonal_decomposer",
+        "description": "P_i projects embedding into per-prime subspace. Orthogonal partition of columns."
+      },
+      {
+        "layer": 3,
+        "op": "modular_fold_accumulator",
+        "description": "Per channel: s_i = P_i@emb(a) + P_i@emb(b), then fold via ReLU-gated subtraction"
+      },
+      {
+        "layer": 4,
+        "op": "coset_cardinality_readout",
+        "description": "Per channel: linear to p_i logits. Select channel matching input prime."
+      }
+    ]
+  },
+  "hyperparameters": {
+    "embedding_dim": 18,
+    "per_channel_dim": 2,
+    "num_channels": 9,
+    "estimated_parameters": 1285
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "spec_version": "2.0",
+  "architecture_name": "syndrome_refinement_decoder_v2",
+  "novel_component": {
+    "type": "modular_arithmetic",
+    "class": "syndrome_successive_refinement",
+    "ops_used": [
+      "parity_accumulator",
+      "successive_refinement_compressor",
+      "syndrome_basis_synthesizer",
+      "syndrome_correlator",
+      "iterative_belief_refiner"
+    ]
+  },
+  "composition": {
+    "strategy": "parallel_merge_with_feedback",
+    "hybrid_ratio": 1.0,
+    "num_layers": 6,
+    "layer_arrangement": [
+      {
+        "layer": 1,
+        "op": "input_embed"
+      },
+      {
+        "layer": 2,
+        "op": "parity_accumulator",
+        "output_dim": 128
+      },
+      {
+        "layer": 3,
+        "op": "successive_refinement_compressor",
+        "output_dim": 224
+      },
+      {
+        "layer": 4,
+        "op": "syndrome_basis_synthesizer",
+        "output_dim": 224
+      },
+      {
+        "layer": 5,
+        "op": "syndrome_correlator",
+        "output_dim": "p"
+      },
+      {
+        "layer": 6,
+        "op": "iterative_belief_refiner",
+        "output_dim": "p",
+        "fix": "normalize scores by sqrt(dim) before feedback"
+      }
+    ]
+  },
+  "hyperparameters": {
+    "embedding_dim_input": 128,
+    "embedding_dim_prime": 32,
+    "bottleneck_dims": [
+      32,
+      64,
+      128
+    ],
+    "refinement_output_dim": 224,
+    "num_belief_iterations": 2,
+    "score_normalization": "divide_by_sqrt_dim",
+    "estimated_parameters": 120000,
+    "refinement_of": "0e3ee94aeecc",
+    "refinement_type": "fix_unbounded_output"
+  }
+}

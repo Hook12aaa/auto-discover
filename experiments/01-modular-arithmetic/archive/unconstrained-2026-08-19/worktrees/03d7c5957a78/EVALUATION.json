@@ -1,0 +1,124 @@
+{
+  "verdict": "ACCEPT",
+  "experiment_hash": "03d7c5957a78",
+  "architecture_name": "torus_rotation_compositor",
+  "metrics": {
+    "test_accuracy_modular_addition": 0.999403715133667,
+    "compute_to_threshold_ratio": 1.766412e-06,
+    "samples_to_threshold_accuracy": 834000,
+    "gradient_health_mean_norm": 1.1232266098608634,
+    "param_efficiency_params_per_accuracy_point": 3.5321061414384216
+  },
+  "success_criteria_met": [
+    {
+      "criterion": "Reaches 99% test accuracy using less than 50% of baseline's compute-to-threshold",
+      "met": true,
+      "evidence": "Candidate reached 99.94% test accuracy at epoch 500 (1.766e9 FLOPs). Baseline never reached 99% threshold (final test accuracy 45.3%), so baseline compute_to_threshold is null/infinite. Candidate trivially satisfies the <50% constraint."
+    },
+    {
+      "criterion": "Maintains performance across all tested primes without per-prime tuning",
+      "met": true,
+      "evidence": "Per-prime accuracy: p=5: 100%, p=7: 96%, p=11: 100%, p=13: 100%, p=17: 100%, p=19: 100%, p=23: 100%, p=29: 100%, p=31: 100%. All primes at 96% or above with 8/9 at 100%. Baseline range: 36.6%-61.5%. No per-prime tuning was used."
+    },
+    {
+      "criterion": "Achieves higher test accuracy per FLOP than baseline across the full compute budget",
+      "met": true,
+      "evidence": "Candidate: 0.9994 accuracy / 3.533e10 FLOPs = 2.83e-11 accuracy/FLOP. Baseline: 0.4532 accuracy / 1.216e14 FLOPs = 3.73e-15 accuracy/FLOP. Candidate achieves ~7,590x higher accuracy per FLOP. At every matched epoch checkpoint, candidate accuracy exceeds baseline."
+    }
+  ],
+  "failure_criteria_triggered": [],
+  "failure_criteria_checked": [
+    {
+      "criterion": "Gradient norms exceed 50 for 3 consecutive checkpoints",
+      "triggered": false,
+      "evidence": "Maximum gradient norm was 26.6 at epoch 1 (initialization). All subsequent checkpoints below 5.0. Maximum post-initialization norm was 4.79 at epoch 7800. Never approaches 50 at any checkpoint."
+    },
+    {
+      "criterion": "Test accuracy does not exceed 60% after consuming 50% of compute budget",
+      "triggered": false,
+      "evidence": "Test accuracy exceeded 60% at epoch 200 (86.6% test accuracy, 706.6M FLOPs consumed). This is 2% of total epochs and 2% of total FLOPs used. 50% budget point (epoch 5000) shows 99.88% test accuracy."
+    },
+    {
+      "criterion": "Loss does not decrease below initial loss after consuming 20% of compute budget",
+      "triggered": false,
+      "evidence": "Initial loss at epoch 1: 8.096. Loss at epoch 100: 2.034. Loss decreased dramatically within first 1% of training. At 20% of budget (epoch 2000), loss was 0.00575."
+    }
+  ],
+  "forensics": {
+    "gradient_stability": {
+      "verdict": "pass",
+      "details": "Gradient norms follow a healthy decay pattern: 26.6 (epoch 1) -> 2.58 (epoch 100) -> 0.61 (epoch 500) -> 0.006 (epoch 7500). Brief perturbation at epochs 7600-8600 (norms 1.2-4.8) resolved by epoch 9000. Mean norm across all checkpoints: 1.12. No consecutive checkpoints with norms exceeding 50.",
+      "max_norm": 26.600569988550347,
+      "max_norm_epoch": 1,
+      "perturbation_epochs": "7600-8600",
+      "perturbation_max": 4.788794823248213,
+      "perturbation_resolved": true
+    },
+    "training_trajectory": {
+      "verdict": "pass",
+      "description": "Fast monotonic convergence. Test accuracy progression: 3.3% (epoch 1) -> 55.7% (epoch 100) -> 86.6% (epoch 200) -> 92.1% (epoch 300) -> 98.7% (epoch 400) -> 99.94% (epoch 500). Maintained 99.4-100% for remaining 9500 epochs. Loss decreased monotonically from 8.096 to 1.1e-4 with a brief perturbation at epochs 7600-8600 (loss rose to 0.005, then recovered to 1.1e-4 by epoch 9900). No grokking dynamics -- learning was immediate and sustained."
+    },
+    "per_prime_uniformity": {
+      "verdict": "pass",
+      "details": "All 9 primes at 96% or above. 8/9 primes at 100%. Lowest: prime 7 at 96%. Standard deviation across primes: 0.013. Baseline per-prime range: 36.6%-61.5% (std dev: 0.076). Candidate uniformity is 5.8x tighter than baseline.",
+      "candidate_per_prime": {"5": 1.0, "7": 0.96, "11": 1.0, "13": 1.0, "17": 1.0, "19": 1.0, "23": 1.0, "29": 1.0, "31": 1.0},
+      "baseline_per_prime": {"5": 0.615, "7": 0.56, "11": 0.557, "13": 0.553, "17": 0.469, "19": 0.503, "23": 0.562, "29": 0.411, "31": 0.366}
+    },
+    "baseline_comparison": {
+      "test_accuracy_modular_addition": {
+        "candidate": 0.999403715133667,
+        "baseline": 0.4531902074813843,
+        "ratio": 2.21,
+        "candidate_better": true
+      },
+      "compute_to_threshold_ratio": {
+        "candidate": 1.766412e-06,
+        "baseline": null,
+        "note": "Baseline never reached 99% threshold. Candidate reached it at epoch 500.",
+        "candidate_better": true
+      },
+      "samples_to_threshold_accuracy": {
+        "candidate": 834000,
+        "baseline": null,
+        "note": "Baseline never reached 99% threshold.",
+        "candidate_better": true
+      },
+      "gradient_health_mean_norm": {
+        "candidate": 1.1232266098608634,
+        "baseline": 0.006167269050045132,
+        "note": "Candidate has higher mean gradient norm but well within healthy range. Higher norms reflect active learning; baseline's near-zero norms reflect memorization without generalization."
+      },
+      "param_efficiency_params_per_accuracy_point": {
+        "candidate": 3.5321061414384216,
+        "baseline": 8937.152509338744,
+        "ratio": 0.000395,
+        "candidate_better": true,
+        "note": "Candidate uses 353 parameters total vs baseline's 405,023. Candidate is 2,531x more parameter-efficient per accuracy point."
+      },
+      "total_params": {
+        "candidate": 353,
+        "baseline": 405023,
+        "ratio": 0.000872
+      },
+      "total_flops": {
+        "candidate": 35328240000,
+        "baseline": 121604105520000,
+        "ratio": 0.000290,
+        "note": "Candidate used 3,443x fewer FLOPs."
+      }
+    }
+  },
+  "diagnostics": {
+    "convergence_type": "Fast monotonic convergence with sustained plateau. Reached 99.94% test accuracy by epoch 500 (5% of total budget). No grokking dynamics -- the architecture exploited mathematical structure immediately. Loss continued decreasing smoothly through epoch 7500, followed by a brief perturbation at epochs 7600-8600 (likely weight decay interaction at near-zero gradient regime) that self-resolved by epoch 9000. Final training is in a stable low-loss regime.",
+    "epochs_to_threshold": 500,
+    "threshold_accuracy": 0.99,
+    "fraction_of_budget_to_threshold": 0.05,
+    "late_perturbation": {
+      "present": true,
+      "epoch_range": "7600-8600",
+      "cause": "Weight decay interaction at near-zero gradient magnitudes",
+      "impact": "Transient -- model recovered to 100% test accuracy by epoch 9000",
+      "severity": "negligible"
+    }
+  }
+}

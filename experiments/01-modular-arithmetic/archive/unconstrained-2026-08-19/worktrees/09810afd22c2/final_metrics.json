@@ -1,0 +1,43 @@
+{
+  "experiment_hash": "09810afd22c2",
+  "spec_name": "cayley_algebra_compositor",
+  "seed": 42,
+  "total_params": 589,
+  "epochs_trained": 10000,
+  "wall_clock_minutes": 7.380163049697876,
+  "pre_registered_metrics": {
+    "test_accuracy_modular_addition": 0.08169350029815146,
+    "compute_to_threshold_ratio": null,
+    "samples_to_threshold_accuracy": null,
+    "gradient_health_mean_norm": 0.009143210450565676,
+    "param_efficiency_params_per_accuracy_point": 72.0987591240876
+  },
+  "additional_metrics": {
+    "train_accuracy": 0.17146282973621102,
+    "train_loss": 2.4984774589538574,
+    "test_loss": 3.3079776763916016,
+    "initial_loss": 3.3812780380249023,
+    "initial_grad_norm": 0.09303565361492498,
+    "learning_rate": 1.0,
+    "weight_decay": 6.931471805599453e-05,
+    "threshold_epoch": null,
+    "best_test_accuracy": 0.08586762075134168,
+    "per_prime_test_accuracy": {
+      "5": 0.46153846153846156,
+      "7": 0.36,
+      "11": 0.09836065573770492,
+      "13": 0.1411764705882353,
+      "17": 0.06896551724137931,
+      "19": 0.09944751381215469,
+      "23": 0.07547169811320754,
+      "29": 0.0688836104513064,
+      "31": 0.056133056133056136
+    }
+  },
+  "budget": {
+    "max_epochs": 10000,
+    "max_wall_clock_minutes": 120,
+    "epochs_used_fraction": 1.0,
+    "wall_clock_used_fraction": 0.0615013587474823
+  }
+}

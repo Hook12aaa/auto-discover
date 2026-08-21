@@ -1,0 +1,34 @@
+{
+  "experiment_hash": "a1cd9d9ad268",
+  "genome_spec": "poincare_fold_compositor",
+  "seed": 42,
+  "test_accuracy_modular_addition": 0.01908169350029815,
+  "train_accuracy": 0.20623500645160675,
+  "train_loss": 2.700575351715088,
+  "compute_to_threshold_ratio": 1.0,
+  "samples_to_threshold_accuracy": 16680000,
+  "gradient_health_mean_norm": 0.005218364843001057,
+  "param_efficiency_params_per_accuracy_point": 1744.08,
+  "per_prime_test_accuracy": {
+    "5": 0.07692307692307693,
+    "7": 0.16,
+    "11": 0.01639344262295082,
+    "13": 0.023529411764705882,
+    "17": 0.020689655172413793,
+    "19": 0.027624309392265192,
+    "23": 0.03018867924528302,
+    "29": 0.0166270783847981,
+    "31": 0.002079002079002079
+  },
+  "total_parameters": 3328,
+  "epochs_trained": 10000,
+  "threshold_epoch": null,
+  "wall_clock_seconds": 42.85478186607361,
+  "learning_rate": 0.0661698348663327,
+  "weight_decay": 0.0010475274450361663,
+  "device": "mps",
+  "budget_used": {
+    "epochs": 10000,
+    "wall_clock_minutes": 0.7142463644345601
+  }
+}

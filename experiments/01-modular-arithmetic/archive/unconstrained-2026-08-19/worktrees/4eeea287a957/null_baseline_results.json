@@ -1,0 +1,64 @@
+{
+  "comparison_1_shuffled_labels": {
+    "verdict": "PASS",
+    "candidate_acc": 1.0,
+    "shuffled_acc": 0.014908,
+    "details": "Shuffled-label model achieved 0.0149 test accuracy on real labels. Threshold for PASS: < 0.10 (near random). The architecture does NOT memorize without label structure."
+  },
+  "comparison_2_constant_predictor": {
+    "verdict": "PASS",
+    "candidate_acc": 1.0,
+    "constant_acc": 0.066786,
+    "per_prime_constant_acc": {
+      "5": 0.230769,
+      "7": 0.28,
+      "11": 0.131148,
+      "13": 0.105882,
+      "17": 0.089655,
+      "19": 0.082873,
+      "23": 0.056604,
+      "29": 0.047506,
+      "31": 0.045738
+    },
+    "details": "Constant predictor overall accuracy: 0.0668. Candidate accuracy: 1.0000. Margin: 0.9332. Candidate substantially exceeds constant predictor."
+  },
+  "comparison_3_baseline": {
+    "verdict": "PASS",
+    "metrics_comparison": {
+      "test_accuracy_modular_addition": {
+        "candidate": 1.0,
+        "baseline": 0.4531902074813843,
+        "candidate_better": true,
+        "note": "higher is better"
+      },
+      "compute_to_threshold_ratio": {
+        "candidate": 160128000,
+        "baseline": null,
+        "candidate_better": true,
+        "note": "Baseline never reached threshold; candidate did"
+      },
+      "samples_to_threshold_accuracy": {
+        "candidate": 166800,
+        "baseline": null,
+        "candidate_better": true,
+        "note": "Baseline never reached threshold; candidate did"
+      },
+      "gradient_health_mean_norm": {
+        "candidate": 0.026571827844933348,
+        "baseline": 0.006167269050045132,
+        "candidate_better": true,
+        "note": "Candidate has meaningful gradients (0.027); baseline near zero (0.006) indicates overfit/stagnation"
+      },
+      "param_efficiency_params_per_accuracy_point": {
+        "candidate": 1.6,
+        "baseline": 8937.152509338744,
+        "candidate_better": true,
+        "note": "lower is better"
+      }
+    },
+    "primary_pass": true,
+    "secondary_wins": 4,
+    "details": "Primary metric (test_accuracy_modular_addition): candidate exceeds baseline. Secondary metrics: candidate wins 4/4. Need primary win AND >= 3/4 secondary wins. Result: PASS."
+  },
+  "overall_verdict": "NULL_BASELINE_PASSED"
+}

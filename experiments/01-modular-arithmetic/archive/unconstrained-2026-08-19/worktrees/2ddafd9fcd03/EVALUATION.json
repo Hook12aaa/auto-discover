@@ -1,0 +1,177 @@
+{
+  "experiment_hash": "2ddafd9fcd03",
+  "architecture_name": "harmonic_phase_correlator",
+  "verdict": "INCONCLUSIVE",
+  "verdict_rationale": "All pre-registered metrics pass and all success criteria are technically satisfied. However, the architecture achieves 100% test accuracy at epoch 1 before any gradient update. The initialization mu_{k,p} = (k+1)/p directly encodes the exact DFT frequencies for Z/pZ, making the forward pass a closed-form Fourier correlation rather than a learned representation. No learning occurred — the training loop is a no-op on an already-converged model. The thesis asks for an architecture that 'learns modular addition... by exploiting mathematical structure intrinsic to the task.' This architecture exploits the structure, but does not learn — the initialization IS the answer. Whether encoding the analytic solution in the initialization constitutes 'exploiting mathematical structure' per the thesis is a judgment call that exceeds the evaluator's scope.",
+
+  "pre_registered_metrics": {
+    "primary": {
+      "test_accuracy_modular_addition": {
+        "value": 1.0,
+        "baseline_value": 0.4531902074813843,
+        "improvement_ratio": 2.207,
+        "note": "100% accuracy achieved at initialization (epoch 1), not through training"
+      }
+    },
+    "secondary": {
+      "compute_to_threshold_ratio": {
+        "value": 1601280,
+        "baseline_value": null,
+        "note": "Baseline never reached 99% threshold. Candidate reached 100% at epoch 1. Metric is technically infinite improvement but semantically vacuous — no compute was needed because the initialization encodes the solution."
+      },
+      "samples_to_threshold_accuracy": {
+        "value": 1668,
+        "baseline_value": null,
+        "note": "Candidate reached threshold after 1 epoch (1668 samples seen but not learned from). Baseline never reached threshold."
+      },
+      "gradient_health_mean_norm": {
+        "value": 7.534762504114155e-09,
+        "baseline_value": 0.006167269050045132,
+        "note": "Near-zero gradient norms throughout training confirm no learning signal. Gradients are residual numerical noise from an already-converged loss surface."
+      },
+      "param_efficiency_params_per_accuracy_point": {
+        "value": 1.6,
+        "baseline_value": 8937.152509338744,
+        "improvement_ratio": 5585.7,
+        "note": "160 parameters vs 405,023. Extreme efficiency, but the 160 parameters are analytically set, not learned."
+      }
+    },
+    "forbidden_metrics_check": {
+      "raw_loss_comparison_without_normalization": "not_used",
+      "cherry_picked_single_prime_accuracy": "not_used"
+    }
+  },
+
+  "success_criteria_evaluation": {
+    "criterion_1": {
+      "text": "Reaches 99% test accuracy on modular addition (mod p for p in [5, 31]) using less than 50% of the baseline's compute-to-threshold",
+      "result": "PASS_WITH_CAVEAT",
+      "detail": "Candidate reaches 100% test accuracy at epoch 1 (compute: 1,601,280 FLOPs). Baseline never reaches 99%, so its compute-to-threshold is undefined (null). The candidate trivially satisfies '<50% of baseline' because baseline's threshold is infinite. However, the candidate's compute is effectively 0 because the initialization already solves the task — no gradient updates contributed to the result."
+    },
+    "criterion_2": {
+      "text": "Maintains performance across all tested primes without per-prime tuning",
+      "result": "PASS",
+      "detail": "100% accuracy on all 9 primes (5, 7, 11, 13, 17, 19, 23, 29, 31) at every checkpoint. No per-prime tuning — the formula mu_{k,p} = (k+1)/p inherently handles all primes through the shared parameterization."
+    },
+    "criterion_3": {
+      "text": "Achieves higher test accuracy per FLOP than the baseline across the full compute budget",
+      "result": "PASS",
+      "detail": "Candidate: 1.0 accuracy at 1,601,280 FLOPs (epoch 1). Baseline: 0.4532 accuracy at 121,604,105,520,000 FLOPs (epoch 10000). Accuracy-per-FLOP ratio is >76,000,000x better. But this comparison is misleading: the candidate required 0 effective FLOPs because it was pre-converged."
+    }
+  },
+
+  "failure_criteria_evaluation": {
+    "criterion_1": {
+      "text": "Gradient norms exceed 50 for 3 consecutive checkpoints",
+      "result": "NOT_TRIGGERED",
+      "detail": "Maximum gradient norm: 8.23e-06 (epoch 1). All norms are negligible — 6 orders of magnitude below the failure threshold."
+    },
+    "criterion_2": {
+      "text": "Test accuracy does not exceed 60% after consuming 50% of the compute budget",
+      "result": "NOT_TRIGGERED",
+      "detail": "Test accuracy is 100% from epoch 1 onward."
+    },
+    "criterion_3": {
+      "text": "Loss does not decrease below initial loss after consuming 20% of the compute budget",
+      "result": "NOT_TRIGGERED",
+      "detail": "Loss at epoch 1 is already 1.99e-06. Initial loss (before any training) would be the cross-entropy of the initialization, which is already near-zero."
+    }
+  },
+
+  "forensics": {
+    "data_validation": {
+      "status": "PASS",
+      "train_test_split": "50/50 per prime, deterministic seed-based shuffle",
+      "total_train_samples": 1668,
+      "total_test_samples_approx": 1668,
+      "data_leakage_detected": false,
+      "concern": "The model achieves 100% test accuracy without any gradient update reaching the weights meaningfully. The training data is irrelevant to the model's performance."
+    },
+    "training_forensics": {
+      "status": "FLAG_NO_LEARNING",
+      "findings": [
+        {
+          "finding": "zero_epoch_convergence",
+          "severity": "critical",
+          "detail": "100% train and test accuracy at epoch 1 (the first evaluation point). Loss at epoch 1: 1.99e-06. The model is pre-converged at initialization."
+        },
+        {
+          "finding": "negligible_gradients_throughout",
+          "severity": "critical",
+          "detail": "Gradient norms: 8.23e-06 (epoch 1) -> 7.53e-09 (epoch 10000). Monotonically decreasing. No learning signal at any point. The optimizer has nothing to learn — it's applying weight decay to an already-optimal solution."
+        },
+        {
+          "finding": "initialization_is_analytic_solution",
+          "severity": "critical",
+          "detail": "freq_init[i, k] = (k+1)/p sets the DFT frequencies for Z/pZ. The forward pass computes: score(c) = sum_k w_k * cos(2*pi*freq_k*(a+b-c)). This sum peaks at c=(a+b) mod p by construction. The initialization IS the closed-form DFT solution to modular addition. No learning was needed or occurred."
+        },
+        {
+          "finding": "training_loop_is_noop",
+          "severity": "high",
+          "detail": "The only effect of 10,000 epochs of training is that weight decay very slowly pushes amplitude_weights and freqs toward zero. After 10,000 epochs, accuracy remains 100% — the perturbation from weight decay is too small to degrade the DFT solution within the training budget."
+        }
+      ],
+      "training_dynamics_classification": "pre_converged_at_initialization",
+      "learning_occurred": false
+    },
+    "significance": {
+      "status": "NOT_APPLICABLE",
+      "detail": "Statistical significance testing of learning outcomes is not applicable because no learning occurred. The result is analytically correct by construction, not empirically demonstrated through optimization."
+    },
+    "mechanistic_analysis": {
+      "initialization_formula": "mu_{k,p} = (k+1)/p for k in [0, K-1], p in PRIMES",
+      "mathematical_identity": "The forward pass computes DFT-based correlation: for input (a, b, prime_idx), it computes the DFT of the phase (a+b) at frequencies k/p, then correlates against DFT of each candidate c at the same frequencies. The argmax recovers (a+b) mod p.",
+      "why_it_works_without_training": "The frequencies (k+1)/p are the exact Fourier modes of the cyclic group Z/pZ. Complex multiplication of e^{2*pi*i*a*k/p} and e^{2*pi*i*b*k/p} gives e^{2*pi*i*(a+b)*k/p}. Correlating against e^{2*pi*i*c*k/p} for candidate c peaks at c=(a+b) mod p. This is the standard DFT characterization of modular addition.",
+      "what_training_does": "Weight decay slowly shrinks freqs and amplitude_weights toward zero. The learning rate (0.001) multiplied by near-zero gradients produces negligible parameter updates. The optimizer effectively does nothing.",
+      "parameter_count_breakdown": {
+        "freqs": "9 primes * 16 channels = 144",
+        "amplitude_weights": "16",
+        "total": 160
+      }
+    }
+  },
+
+  "diagnostics": {
+    "convergence_type": "pre_converged_at_initialization",
+    "training_dynamics": "trivial",
+    "accuracy_trajectory": "flat_at_100_percent_from_epoch_1",
+    "loss_trajectory": "monotonically_decreasing_from_near_zero_to_nearer_zero",
+    "gradient_trajectory": "monotonically_decreasing_from_negligible_to_more_negligible",
+    "generalization_gap": 0.0,
+    "per_prime_variance": 0.0,
+    "wall_clock_seconds": 48.31,
+    "threshold_epoch": 1,
+    "epochs_wasted_after_convergence": 9999
+  },
+
+  "comparison_to_baseline": {
+    "test_accuracy": {
+      "candidate": 1.0,
+      "baseline": 0.4531902074813843,
+      "delta": 0.5468097925186157,
+      "candidate_wins": true
+    },
+    "compute_to_threshold": {
+      "candidate": 1601280,
+      "baseline": null,
+      "note": "Baseline never reached 99% threshold in 10,000 epochs. Candidate reached 100% at epoch 1."
+    },
+    "parameter_count": {
+      "candidate": 160,
+      "baseline": 405023,
+      "ratio": 0.000395,
+      "candidate_wins": true
+    },
+    "per_prime_consistency": {
+      "candidate_min": 1.0,
+      "candidate_max": 1.0,
+      "candidate_range": 0.0,
+      "baseline_min": 0.3659043659043659,
+      "baseline_max": 0.6153846153846154,
+      "baseline_range": 0.2494802494802495,
+      "candidate_wins": true
+    }
+  },
+
+  "key_question_for_judge": "The thesis states the architecture 'learns modular addition... by exploiting mathematical structure intrinsic to the task.' This architecture encodes the exact DFT solution in its initialization — it exploits the structure, but does not learn. The metrics are perfect, the mechanism is valid, but no optimization occurred. Does a pre-converged architecture that analytically embeds the task's mathematical structure satisfy a thesis about learning, or does the absence of learning constitute a failure of the thesis despite perfect metrics?"
+}

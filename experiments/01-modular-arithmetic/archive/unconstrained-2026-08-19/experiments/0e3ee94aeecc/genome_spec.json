@@ -1,0 +1,84 @@
+{
+  "spec_version": "2.0",
+  "architecture_name": "syndrome_refinement_decoder",
+  "novel_component": {
+    "type": "modular_arithmetic",
+    "class": "syndrome_successive_refinement",
+    "ops_used": [
+      "parity_accumulator",
+      "successive_refinement_compressor",
+      "syndrome_basis_synthesizer",
+      "syndrome_correlator",
+      "iterative_belief_refiner"
+    ]
+  },
+  "composition": {
+    "strategy": "parallel_merge_with_feedback",
+    "hybrid_ratio": 1.0,
+    "num_layers": 6,
+    "layer_arrangement": [
+      {
+        "layer": 1,
+        "op": "input_embed",
+        "description": "a->e_a R128, b->e_b R128 (shared table 31 entries), p->e_p R32 (9 entries)"
+      },
+      {
+        "layer": 2,
+        "op": "parity_accumulator",
+        "input": "e_a + e_b",
+        "output_dim": 128,
+        "description": "ReLU(W_acc * (e_a + e_b) + b_acc) \u2014 additive sufficient statistic"
+      },
+      {
+        "layer": 3,
+        "op": "successive_refinement_compressor",
+        "input": "layer2",
+        "output_dim": 224,
+        "description": "Three bottleneck stages: h->R32, [h;h1]->R64, [h;h1;h2]->R128, concat h_full=R224"
+      },
+      {
+        "layer": 4,
+        "op": "syndrome_basis_synthesizer",
+        "input": [
+          "e_p",
+          "harmonic_coords(k,p)"
+        ],
+        "output_dim": 224,
+        "description": "Per residue k: v_k = ReLU(W_synth * [c_p; cos(2pi*k/p); sin(2pi*k/p); cos(4pi*k/p); sin(4pi*k/p)])"
+      },
+      {
+        "layer": 5,
+        "op": "syndrome_correlator",
+        "input": [
+          "h_full",
+          "v_k"
+        ],
+        "output_dim": "p",
+        "description": "score_k = h_full dot v_k, matched-filter detection, zero learned params"
+      },
+      {
+        "layer": 6,
+        "op": "iterative_belief_refiner",
+        "input": [
+          "scores",
+          "h_full"
+        ],
+        "output_dim": "p",
+        "description": "h_full += ReLU(W_fb * scores), recompute correlations, T=2 iterations"
+      }
+    ]
+  },
+  "hyperparameters": {
+    "embedding_dim_input": 128,
+    "embedding_dim_prime": 32,
+    "bottleneck_dims": [
+      32,
+      64,
+      128
+    ],
+    "refinement_output_dim": 224,
+    "num_belief_iterations": 2,
+    "num_harmonics": 2,
+    "estimated_parameters": 120000
+  }
+}

@@ -1,0 +1,257 @@
+{
+  "primary_metric_key": "test_accuracy_modular_addition",
+  "metric_direction": "maximize",
+  "nodes": {
+    "03d7c5957a78": {
+      "architecture": "torus_rotation_compositor",
+      "spec_class_fingerprint": "frequency_circular_embed+geodesic_classify+prime_harmonic_gate+rotation_compose|sequential|embed->compose->gate->classify",
+      "round": 1,
+      "evaluate_verdict": "ACCEPT",
+      "review_verdict": "KEEP",
+      "test_accuracy": 0.999403715133667,
+      "params": 353,
+      "flops": 35328240000,
+      "on_pareto_front": false
+    },
+    "2ddafd9fcd03": {
+      "architecture": "harmonic_phase_correlator",
+      "spec_class": "amplitude_weighter+correlation_classifier+harmonic_projector+phase_adder+prime_modulator|sequential_parallel_fork|modulate->project_parallel->add_phase->weight->classify",
+      "parent_id": null,
+      "evaluate_verdict": "INCONCLUSIVE",
+      "review_verdict": null,
+      "worktree_path": ".auto-discover/worktrees/2ddafd9fcd03",
+      "round": 1,
+      "metrics": {
+        "test_accuracy_modular_addition": 1.0,
+        "total_parameters": 160,
+        "total_flops": 1601280
+      },
+      "notes": "Pre-converged at initialization. DFT frequencies encoded in init. No learning occurred."
+    },
+    "0e3ee94aeecc": {
+      "architecture": "syndrome_refinement_decoder",
+      "spec_class": "iterative_belief_refiner+parity_accumulator+successive_refinement_compressor+syndrome_basis_synthesizer+syndrome_correlator|parallel_merge_with_feedback|embed->accumulate->compress|synthesize->correlate->refine_loop",
+      "parent_id": null,
+      "evaluate_verdict": null,
+      "review_verdict": null,
+      "worktree_path": null,
+      "round": 1,
+      "isolation_result": "FAIL",
+      "notes": "Failed isolation Gate 2: iterative_belief_refiner unbounded output"
+    },
+    "a1cd9d9ad268": {
+      "architecture": "poincare_fold_compositor",
+      "spec_class": "orbit_readout+orbit_state_initializer+poincare_return_map+state_accumulator|sequential_passthrough|initialize->accumulate->fold->readout",
+      "parent_id": null,
+      "evaluate_verdict": "REJECT",
+      "review_verdict": null,
+      "worktree_path": ".auto-discover/worktrees/a1cd9d9ad268",
+      "round": 2,
+      "metrics": {
+        "test_accuracy_modular_addition": 0.019,
+        "total_parameters": 3328
+      }
+    },
+    "09810afd22c2": {
+      "architecture": "cayley_algebra_compositor",
+      "spec_class": "action_orbit_embed+cayley_product+element_state_embed+quotient_fiber_readout|parallel_to_sequential|{embed_state,embed_action}->cayley_product->readout_x9",
+      "parent_id": null,
+      "evaluate_verdict": "REJECT",
+      "review_verdict": null,
+      "worktree_path": ".auto-discover/worktrees/09810afd22c2",
+      "round": 2,
+      "metrics": {
+        "test_accuracy_modular_addition": 0.0817,
+        "total_parameters": 589
+      }
+    },
+    "98308054c3b9": {
+      "architecture": "crt_channel_decomposer",
+      "spec_class": "coset_cardinality_readout+crt_orthogonal_decomposer+modular_fold_accumulator|parallel_independent_channels|embed->decompose_parallel->accumulate->fold->readout",
+      "parent_id": null,
+      "evaluate_verdict": "REJECT",
+      "review_verdict": null,
+      "worktree_path": ".auto-discover/worktrees/98308054c3b9",
+      "round": 2,
+      "metrics": {
+        "test_accuracy_modular_addition": 0.0388,
+        "total_parameters": 1218
+      }
+    },
+    "4eeea287a957": {
+      "architecture": "harmonic_phase_correlator_v2",
+      "spec_class_fingerprint": "amplitude_weighter+correlation_classifier+harmonic_projector+phase_adder+prime_modulator|sequential_parallel_fork|modulate->project_parallel->add_phase->weight->classify",
+      "parent_id": "2ddafd9fcd03",
+      "evaluate_verdict": "ACCEPT",
+      "review_verdict": "KEEP",
+      "worktree_path": ".auto-discover/worktrees/4eeea287a957",
+      "round": 3,
+      "test_accuracy": 1.0,
+      "params": 160,
+      "flops": 160128000,
+      "on_pareto_front": true,
+      "metrics": {
+        "test_accuracy_modular_addition": 1.0,
+        "total_parameters": 160,
+        "compute_to_threshold_ratio": 160128000,
+        "samples_to_threshold_accuracy": 166800,
+        "param_efficiency_params_per_accuracy_point": 1.6
+      },
+      "notes": "V2 of signal class with random init. Genuine learning confirmed \u2014 3 primes imperfect at epoch 1, all 9 at 100% by epoch 100. Strictly Pareto-dominates geometric variant on all axes."
+    },
+    "1b8b400dda1c": {
+      "architecture": "torus_rotation_compositor_v2",
+      "spec_class": "frequency_circular_embed+geodesic_classify+prime_harmonic_gate+rotation_compose|sequential|embed->compose->gate->classify",
+      "parent_id": "03d7c5957a78",
+      "evaluate_verdict": "REJECT",
+      "review_verdict": null,
+      "worktree_path": ".auto-discover/worktrees/1b8b400dda1c",
+      "round": 3,
+      "metrics": {
+        "test_accuracy_modular_addition": 0.997,
+        "total_parameters": 177
+      },
+      "notes": "K=16 refinement. Gradient failure criterion triggered. Diminishing returns vs K=32."
+    },
+    "ba7a19bb849e": {
+      "architecture": "syndrome_refinement_decoder_v2",
+      "spec_class": "iterative_belief_refiner+parity_accumulator+successive_refinement_compressor+syndrome_basis_synthesizer+syndrome_correlator|parallel_merge_with_feedback|embed->accumulate->compress|synthesize->correlate->refine_loop",
+      "parent_id": "0e3ee94aeecc",
+      "evaluate_verdict": "INCONCLUSIVE",
+      "review_verdict": null,
+      "worktree_path": ".auto-discover/worktrees/ba7a19bb849e",
+      "round": 3,
+      "metrics": {
+        "test_accuracy_modular_addition": 0.986,
+        "total_parameters": 79808
+      },
+      "notes": "Fixed belief refiner (sqrt(224) normalization). 98.6% acc, small primes weak."
+    }
+  },
+  "pareto_front": [
+    {
+      "hash": "4eeea287a957",
+      "architecture": "harmonic_phase_correlator_v2",
+      "test_accuracy": 1.0,
+      "params": 160,
+      "flops": 160128000
+    }
+  ],
+  "pareto_history": [
+    {
+      "round": 1,
+      "event": "front_initialized",
+      "added": [
+        "03d7c5957a78"
+      ],
+      "removed": []
+    },
+    [
+      {
+        "hash": "03d7c5957a78",
+        "architecture": "torus_rotation_compositor",
+        "test_accuracy": 0.999403715133667,
+        "params": 353,
+        "flops": 35328240000
+      }
+    ],
+    [
+      {
+        "hash": "03d7c5957a78",
+        "architecture": "torus_rotation_compositor",
+        "test_accuracy": 0.999403715133667,
+        "params": 353,
+        "flops": 35328240000
+      }
+    ],
+    {
+      "round": 3,
+      "event": "front_updated",
+      "added": [
+        "4eeea287a957"
+      ],
+      "removed": [
+        "03d7c5957a78"
+      ],
+      "reason": "Signal v2 strictly Pareto-dominates geometric on all three axes: accuracy (1.0 > 0.9994), params (160 < 353), FLOPs (1.6e8 < 3.53e10)"
+    },
+    [
+      {
+        "hash": "4eeea287a957",
+        "architecture": "harmonic_phase_correlator_v2",
+        "test_accuracy": 1.0,
+        "params": 160,
+        "flops": 160128000
+      }
+    ],
+    [
+      {
+        "hash": "4eeea287a957",
+        "architecture": "harmonic_phase_correlator_v2",
+        "test_accuracy": 1.0,
+        "params": 160,
+        "flops": 160128000
+      }
+    ]
+  ],
+  "class_status": {
+    "frequency_circular_embed+geodesic_classify+prime_harmonic_gate+rotation_compose|sequential|embed->compose->gate->classify": {
+      "status": "EXHAUSTED",
+      "depth": 2,
+      "best_hash": "03d7c5957a78",
+      "best_accuracy": 0.9994,
+      "exhaustion_reason": "Diminishing returns: v2 (K=16, 99.7%) worse than v1 (K=32, 99.94%) with gradient instability"
+    },
+    "amplitude_weighter+correlation_classifier+harmonic_projector+phase_adder+prime_modulator|sequential_parallel_fork|modulate->project_parallel->add_phase->weight->classify": {
+      "status": "EXHAUSTED",
+      "depth": 2,
+      "best_hash": "4eeea287a957",
+      "best_accuracy": 1.0,
+      "exhaustion_reason": "Depth ceiling: 100% accuracy at depth 2, theoretical maximum reached"
+    },
+    "iterative_belief_refiner+parity_accumulator+successive_refinement_compressor+syndrome_basis_synthesizer+syndrome_correlator|parallel_merge_with_feedback|embed->accumulate->compress|synthesize->correlate->refine_loop": {
+      "status": "EXHAUSTED",
+      "depth": 2,
+      "best_hash": "ba7a19bb849e",
+      "best_accuracy": 0.986,
+      "exhaustion_reason": "Pareto dominated by signal class (100% acc, 160 params vs 98.6% acc, 79808 params)"
+    },
+    "orbit_readout+orbit_state_initializer+poincare_return_map+state_accumulator|sequential_passthrough|initialize->accumulate->fold->readout": {
+      "status": "EXHAUSTED",
+      "depth": 1,
+      "best_hash": "a1cd9d9ad268",
+      "best_accuracy": 0.019,
+      "exhaustion_reason": "Pareto dominated by geometric class"
+    },
+    "action_orbit_embed+cayley_product+element_state_embed+quotient_fiber_readout|parallel_to_sequential|{embed_state,embed_action}->cayley_product->readout_x9": {
+      "status": "EXHAUSTED",
+      "depth": 1,
+      "best_hash": "09810afd22c2",
+      "best_accuracy": 0.0817,
+      "exhaustion_reason": "Pareto dominated by geometric class"
+    },
+    "coset_cardinality_readout+crt_orthogonal_decomposer+modular_fold_accumulator|parallel_independent_channels|embed->decompose_parallel->accumulate->fold->readout": {
+      "status": "EXHAUSTED",
+      "depth": 1,
+      "best_hash": "98308054c3b9",
+      "best_accuracy": 0.0388,
+      "exhaustion_reason": "Pareto dominated by geometric class"
+    }
+  },
+  "search_status": "CONVERGED",
+  "current_round": 4,
+  "round_state": "complete",
+  "agents_pending": 0,
+  "failed_isolations": [
+    {
+      "hash": "0e3ee94aeecc",
+      "architecture": "syndrome_refinement_decoder",
+      "spec_class_fingerprint": "iterative_belief_refiner+parity_accumulator+successive_refinement_compressor+syndrome_basis_synthesizer+syndrome_correlator|parallel_merge_with_feedback|embed->accumulate->compress|synthesize->correlate->refine_loop",
+      "failure": "Gate 2 output range: iterative_belief_refiner unbounded positive feedback",
+      "round": 1,
+      "attempt": 1
+    }
+  ],
+  "terminal_verdict": "DISCOVERY_CONFIRMED",
+  "leading_candidate": "4eeea287a957"
+}

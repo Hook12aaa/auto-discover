@@ -1,0 +1,47 @@
+{
+  "spec_version": "2.0",
+  "architecture_name": "poincare_fold_compositor",
+  "novel_component": {
+    "type": "modular_arithmetic",
+    "class": "piecewise_fold_dynamical",
+    "ops_used": [
+      "orbit_state_initializer",
+      "state_accumulator",
+      "poincare_return_map",
+      "orbit_readout"
+    ]
+  },
+  "composition": {
+    "strategy": "sequential_passthrough",
+    "hybrid_ratio": 1.0,
+    "num_layers": 4,
+    "layer_arrangement": [
+      {
+        "layer": 1,
+        "op": "orbit_state_initializer",
+        "description": "a->E_a[a], b->E_b[b], p->E_p[idx]. Three embedding tables."
+      },
+      {
+        "layer": 2,
+        "op": "state_accumulator",
+        "description": "s_free = s_a + s_b. Beta passes through unchanged."
+      },
+      {
+        "layer": 3,
+        "op": "poincare_return_map",
+        "description": "crossing=dot(w,s_free-beta)+b; gate=sigmoid(crossing); s_folded=s_free-gate*beta"
+      },
+      {
+        "layer": 4,
+        "op": "orbit_readout",
+        "description": "logits = W_out @ s_folded + b_out"
+      }
+    ]
+  },
+  "hyperparameters": {
+    "embedding_dim": 32,
+    "num_primes": 9,
+    "max_val": 31,
+    "estimated_parameters": 2145
+  }
+}

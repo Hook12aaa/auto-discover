@@ -1,0 +1,30 @@
+{
+  "problem_restatements": [
+    "CRT decomposition: Computing (a+b) mod p for 9 coprime primes is equivalent to addition in Z/5Z x Z/7Z x ... x Z/31Z. By CRT, these 9 additions are algebraically independent.",
+    "Quotient-remainder partition: Each prime p partitions integers into p cosets. Computing mod p means: determine coset indices, add them, fold if sum >= p."
+  ],
+  "analogy_domain": "combinatorics / number theory / CRT",
+  "analogy": "CRT orthogonal idempotents: basis elements satisfy idempotence, orthogonality, completeness. Architecture mirrors this with learned orthogonal projectors decomposing shared embedding into independent prime-indexed subspaces.",
+  "plan": {
+    "ops": [
+      "crt_orthogonal_decomposer: Decomposes d-dim embedding into 9 orthogonal subspaces via projection matrices P_i. Orthogonality enforced via column partition of orthogonal matrix Q.",
+      "modular_fold_accumulator: Per-channel sum + piecewise fold. s_i = channel_a_i + channel_b_i, then folded_i = s_i - scale_i * ReLU(W_fold_i @ s_i + bias_fold_i).",
+      "coset_cardinality_readout: Per-channel linear projection to p_i logits. Output selects channel matching input prime."
+    ],
+    "composition_strategy": "parallel_independent_channels",
+    "layer_arrangement": "embed_shared -> {decompose_i -> accumulate_i -> fold_i -> readout_i} x 9 primes in parallel",
+    "reasoning": "CRT guarantees mod-p computations for distinct primes are algebraically independent. Orthogonal projections encode this independence. Each channel solves single-prime addition. ~1285 params total."
+  },
+  "expected_outcome": ">95% accuracy across all primes with ~1000-1500 params. Orthogonal channels eliminate inter-prime interference. Monotonic convergence.",
+  "falsification": "Fails if: (1) decomposer can't learn CRT basis, (2) fold fails for large primes, (3) channels interfere (oscillating accuracy).",
+  "look_back": [
+    "CRT IS the architecture — canonical theorem for simultaneous modular arithmetic.",
+    "Generalizes to any coprime moduli set.",
+    "One-shot: decompose, add, fold, done. No iteration needed."
+  ],
+  "fingerprint": {
+    "sorted_ops": ["coset_cardinality_readout", "crt_orthogonal_decomposer", "modular_fold_accumulator"],
+    "composition_strategy": "parallel_independent_channels",
+    "layer_arrangement": "embed->decompose_parallel->accumulate->fold->readout"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "problem_restatements": [
+    "Compute the landing point of a single evolution step of the shift dynamical system T_b(a) = (a+b) mod p, where the state space has period boundary p, for 9 distinct periodic regimes.",
+    "Decompose modular sum into free accumulation (s = a + b) followed by a piecewise period fold (s mod p = s - p * indicator(s >= p)). Since a+b < 2p, exactly one fold suffices."
+  ],
+  "analogy_domain": "dynamical systems / discrete dynamics",
+  "analogy": "Poincare return map on periodic state space. Orbits wrap at period boundary p. The return map subtracts p to fold the state back onto [0, p-1]. Modular addition decomposes into free evolution + single fold.",
+  "plan": {
+    "ops": [
+      "orbit_state_initializer: Maps a, b to state vectors s_a=E_a[a], s_b=E_b[b] and prime to boundary vector beta=E_p[p_idx]",
+      "state_accumulator: s_free = s_a + s_b (element-wise, unbounded sum). Beta passes through unchanged.",
+      "poincare_return_map: crossing = dot(w_detect, s_free - beta) + b_detect; gate = sigmoid(crossing); s_folded = s_free - gate * beta. Differentiable piecewise fold.",
+      "orbit_readout: logits = W_out @ s_folded + b_out. Linear projection to class scores."
+    ],
+    "composition_strategy": "sequential_passthrough",
+    "layer_arrangement": "initialize(a,b,p)->accumulate(s_a+s_b; pass beta)->fold(s_free, beta)->readout(s_folded)",
+    "reasoning": "Mod has exact two-stage decomposition: linear accumulation + piecewise fold. Architecture makes this explicit. Boundary vector beta carries prime-specific period info. Single gated subtraction handles the wrap for all primes."
+  },
+  "expected_outcome": "Fast convergence (<500 epochs) to >95% accuracy with under 1000 params. Single learnable nonlinearity (gated fold) trains stably.",
+  "falsification": "Fails if: (1) embeddings can't support additive compositionality, (2) sigmoid gate can't sharpen near boundary, (3) 9 boundaries interfere in shared state space.",
+  "look_back": [
+    "Mathematically exact in the limit: if embed faithfully represents a+b and gate perfectly switches at boundary, computes mod without error.",
+    "Works for any modulus where a+b < 2*modulus, not just primes.",
+    "Structurally distinct from rotation (no periodicity), harmonic (no frequency domain), and syndrome (no iteration)."
+  ],
+  "fingerprint": {
+    "sorted_ops": ["orbit_readout", "orbit_state_initializer", "poincare_return_map", "state_accumulator"],
+    "composition_strategy": "sequential_passthrough",
+    "layer_arrangement": "initialize->accumulate->fold->readout"
+  }
+}

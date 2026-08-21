@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BOOTSTRAP="${CLAUDE_PLUGIN_ROOT}/skills/using-auto-discover/SKILL.md"
+[[ -f "$BOOTSTRAP" ]] || exit 0
+
+source "${CLAUDE_PLUGIN_ROOT}/hooks/lib/emit-context.sh"
+
+emit_context "$(cat "$BOOTSTRAP")"

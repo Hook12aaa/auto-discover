@@ -1,0 +1,29 @@
+{
+  "seed_results": {
+    "42": {
+      "test_accuracy": 1.0,
+      "epochs_to_99pct": 100
+    },
+    "137": {
+      "test_accuracy": 1.0,
+      "epochs_to_99pct": 100
+    },
+    "256": {
+      "test_accuracy": 1.0,
+      "epochs_to_99pct": 1
+    },
+    "512": {
+      "test_accuracy": 1.0,
+      "epochs_to_99pct": 1
+    },
+    "1024": {
+      "test_accuracy": 1.0,
+      "epochs_to_99pct": 1
+    }
+  },
+  "mean_accuracy": 1.0,
+  "variance": 0.0,
+  "variance_tolerance": 0.15,
+  "all_seeds_accept": true,
+  "overall_verdict": "REPRODUCIBILITY_PASSED"
+}

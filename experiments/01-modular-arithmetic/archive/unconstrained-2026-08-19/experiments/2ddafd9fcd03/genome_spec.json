@@ -1,0 +1,71 @@
+{
+  "spec_version": "2.0",
+  "architecture_name": "harmonic_phase_correlator",
+  "novel_component": {
+    "type": "modular_arithmetic",
+    "class": "harmonic_character_decomposition",
+    "ops_used": [
+      "prime_modulator",
+      "harmonic_projector",
+      "phase_adder",
+      "amplitude_weighter",
+      "correlation_classifier"
+    ]
+  },
+  "composition": {
+    "strategy": "sequential_parallel_fork",
+    "hybrid_ratio": 1.0,
+    "num_layers": 5,
+    "layer_arrangement": [
+      {
+        "layer": 1,
+        "op": "prime_modulator",
+        "input": "p",
+        "output_dim": 16,
+        "description": "Learned frequency table: p -> mu_{k,p} for k=1..K. 9*K=144 params, init k/p"
+      },
+      {
+        "layer": 2,
+        "op": "harmonic_projector",
+        "input": [
+          "a",
+          "b",
+          "freqs"
+        ],
+        "output_dim": 32,
+        "description": "n -> (cos(2pi*n*mu_{k,p}), sin(2pi*n*mu_{k,p})) per circle. Applied to a and b in parallel. Zero params."
+      },
+      {
+        "layer": 3,
+        "op": "phase_adder",
+        "input": "layer2_outputs",
+        "output_dim": 32,
+        "description": "Pairwise complex multiplication: re=re_a*re_b-im_a*im_b, im=re_a*im_b+im_a*re_b. Zero params."
+      },
+      {
+        "layer": 4,
+        "op": "amplitude_weighter",
+        "input": "layer3",
+        "output_dim": 32,
+        "description": "Per-channel scaling by learned w_k. K=16 params, init 1.0"
+      },
+      {
+        "layer": 5,
+        "op": "correlation_classifier",
+        "input": [
+          "layer4",
+          "freqs"
+        ],
+        "output_dim": "p",
+        "description": "score(c) = sum_k w_k * [combined_re_k*cos(2pi*c*mu)+combined_im_k*sin(2pi*c*mu)]. Masked for c>=p."
+      }
+    ]
+  },
+  "hyperparameters": {
+    "num_channels": 16,
+    "embedding_dim": 32,
+    "frequency_init": "k_over_p",
+    "amplitude_init": 1.0,
+    "total_parameters": 160
+  }
+}

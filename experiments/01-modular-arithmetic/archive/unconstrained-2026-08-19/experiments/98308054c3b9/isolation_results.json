@@ -1,0 +1,98 @@
+{
+  "gate1_gradient_flow": {
+    "verdict": "PASS",
+    "details": "All 7 active params have finite gradients in range. Non-target channels correctly isolated (no gradient).",
+    "grad_stats": {
+      "embedding.weight": {
+        "min": 0.0,
+        "max": 0.01360253,
+        "mean": 0.00126912,
+        "nonzero_count": 342,
+        "nonzero_min": 1.07e-05
+      },
+      "raw_Q": {
+        "min": 0.0,
+        "max": 0.02661315,
+        "mean": 0.0012857,
+        "nonzero_count": 108,
+        "nonzero_min": 1.592e-05
+      },
+      "fold_w.2": {
+        "min": 0.00916182,
+        "max": 0.03784544,
+        "mean": 0.02350363,
+        "nonzero_count": 2,
+        "nonzero_min": 0.00916182
+      },
+      "fold_bias.2": {
+        "min": 0.01632847,
+        "max": 0.01632847,
+        "mean": 0.01632847,
+        "nonzero_count": 1,
+        "nonzero_min": 0.01632847
+      },
+      "fold_scale.2": {
+        "min": 0.06072289,
+        "max": 0.06072289,
+        "mean": 0.06072289,
+        "nonzero_count": 1,
+        "nonzero_min": 0.06072289
+      },
+      "readout_W.2": {
+        "min": 0.03240618,
+        "max": 0.68782407,
+        "mean": 0.28165036,
+        "nonzero_count": 10,
+        "nonzero_min": 0.03240618
+      },
+      "readout_b.2": {
+        "min": 0.01952538,
+        "max": 0.14048481,
+        "mean": 0.08974934,
+        "nonzero_count": 5,
+        "nonzero_min": 0.01952538
+      }
+    },
+    "param_count": 1218
+  },
+  "gate2_output_range": {
+    "verdict": "PASS",
+    "details": "Outputs in [-1.6300, 1.2580], variance=0.117621, no NaN/Inf.",
+    "range": [
+      -1.630047,
+      1.258
+    ],
+    "variance": 0.117621
+  },
+  "gate3_toy_convergence": {
+    "verdict": "PASS",
+    "details": "Loss: 1.6334 -> 0.9284. Best accuracy: 56.00%. Final accuracy: 52.00%.",
+    "loss_trajectory": [
+      1.633425,
+      1.307097,
+      1.092234,
+      1.007244,
+      0.970443,
+      0.952381,
+      0.942932,
+      0.937279,
+      0.933219,
+      0.930339,
+      0.928398
+    ],
+    "accuracy_trajectory": [
+      0.28,
+      0.32,
+      0.48,
+      0.48,
+      0.56,
+      0.56,
+      0.56,
+      0.56,
+      0.52,
+      0.52,
+      0.52
+    ]
+  },
+  "overall_verdict": "COMPONENT_VALIDATED"
+}

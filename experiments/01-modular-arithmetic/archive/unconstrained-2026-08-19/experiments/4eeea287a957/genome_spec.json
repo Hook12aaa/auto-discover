@@ -1,0 +1,68 @@
+{
+  "spec_version": "2.0",
+  "architecture_name": "harmonic_phase_correlator_v2",
+  "novel_component": {
+    "type": "modular_arithmetic",
+    "class": "harmonic_character_decomposition",
+    "ops_used": [
+      "prime_modulator",
+      "harmonic_projector",
+      "phase_adder",
+      "amplitude_weighter",
+      "correlation_classifier"
+    ]
+  },
+  "composition": {
+    "strategy": "sequential_parallel_fork",
+    "hybrid_ratio": 1.0,
+    "num_layers": 5,
+    "layer_arrangement": [
+      {
+        "layer": 1,
+        "op": "prime_modulator",
+        "input": "p",
+        "output_dim": 16
+      },
+      {
+        "layer": 2,
+        "op": "harmonic_projector",
+        "input": [
+          "a",
+          "b",
+          "freqs"
+        ],
+        "output_dim": 32
+      },
+      {
+        "layer": 3,
+        "op": "phase_adder",
+        "input": "layer2_outputs",
+        "output_dim": 32
+      },
+      {
+        "layer": 4,
+        "op": "amplitude_weighter",
+        "input": "layer3",
+        "output_dim": 32
+      },
+      {
+        "layer": 5,
+        "op": "correlation_classifier",
+        "input": [
+          "layer4",
+          "freqs"
+        ],
+        "output_dim": "p"
+      }
+    ]
+  },
+  "hyperparameters": {
+    "num_channels": 16,
+    "embedding_dim": 32,
+    "frequency_init": "random_uniform_0_to_1",
+    "amplitude_init": 1.0,
+    "total_parameters": 160,
+    "refinement_of": "2ddafd9fcd03",
+    "refinement_type": "random_init_to_test_learning"
+  }
+}

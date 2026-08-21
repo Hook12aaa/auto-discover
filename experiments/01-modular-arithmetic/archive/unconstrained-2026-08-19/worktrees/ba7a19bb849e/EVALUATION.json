@@ -1,0 +1,112 @@
+{
+  "experiment_hash": "ba7a19bb849e",
+  "architecture": "syndrome_refinement_decoder_v2",
+  "spec_class": "information-theoretic",
+  "seed": 42,
+  "evaluator": "eval-r3-info",
+  "timestamp": "2026-08-19T00:00:00Z",
+
+  "pre_registered_metrics": {
+    "primary": {
+      "test_accuracy_modular_addition": {
+        "value": 0.986285,
+        "baseline_value": 0.4532,
+        "improvement_over_baseline": 1.177,
+        "meets_99_threshold": false
+      }
+    },
+    "secondary": {
+      "compute_to_threshold_ratio": {
+        "value": null,
+        "baseline_value": null,
+        "note": "Neither candidate nor baseline reached the 99% threshold"
+      },
+      "samples_to_threshold_accuracy": {
+        "value": null,
+        "baseline_value": null,
+        "note": "Threshold never reached"
+      },
+      "gradient_health_mean_norm": {
+        "value": 0.488935,
+        "baseline_value": 0.006167
+      },
+      "param_efficiency_params_per_accuracy_point": {
+        "value": 809.18,
+        "baseline_value": 8937.15,
+        "improvement_ratio": 11.04
+      }
+    }
+  },
+
+  "success_criteria": {
+    "SC1_99pct_accuracy_with_less_compute": {
+      "criterion": "Reaches 99% test accuracy on modular addition (mod p for p in [5, 31]) using less than 50% of the baseline's compute-to-threshold",
+      "result": "FAIL",
+      "evidence": "Peak test accuracy was 98.6% at epoch 3850. Never crossed 99% at any checkpoint. threshold_epoch is null. The 0.4% gap is narrow but the threshold is not met."
+    },
+    "SC2_performance_across_all_primes": {
+      "criterion": "Maintains performance across all tested primes without per-prime tuning",
+      "result": "FAIL",
+      "evidence": "Severe per-prime variance: p=5: 46.2%, p=7: 84.0%, p=11: 93.4%, p=13: 100%, p=17: 100%, p=19: 99.4%, p=23: 99.6%, p=29: 98.6%, p=31: 100%. p=5 accuracy (46.2%) is below even the baseline's p=5 accuracy (61.5%). Small primes suffer from data scarcity under 50% train split."
+    },
+    "SC3_higher_accuracy_per_flop": {
+      "criterion": "Achieves higher test accuracy per FLOP than the baseline across the full compute budget",
+      "result": "PASS",
+      "evidence": "Candidate: 0.986 accuracy / 3.45e13 FLOPs = 2.86e-14 acc/FLOP. Baseline: 0.453 accuracy / 1.22e14 FLOPs = 3.72e-15 acc/FLOP. Candidate achieves 7.7x higher accuracy per FLOP. 5.1x fewer parameters (79,808 vs 405,023). 11x better parameter efficiency (809 vs 8,937 params/accuracy-point)."
+    }
+  },
+
+  "failure_criteria": {
+    "FC1_gradient_explosion": {
+      "criterion": "Gradient norms exceed 50 for 3 consecutive checkpoints",
+      "result": "NOT_TRIGGERED",
+      "evidence": "No three consecutive checkpoints had gradient norms above 50. Maximum single-checkpoint gradient norm was 20.59 at epoch 10000 (catastrophic final collapse)."
+    },
+    "FC2_low_accuracy_at_half_budget": {
+      "criterion": "Test accuracy does not exceed 60% after consuming 50% of the compute budget",
+      "result": "NOT_TRIGGERED",
+      "evidence": "Test accuracy exceeded 80% by epoch 100 (1% of budget). At 50% budget (epoch 5000), test accuracy was 98.4%."
+    },
+    "FC3_no_loss_decrease": {
+      "criterion": "Loss does not decrease below initial loss after consuming 20% of the compute budget",
+      "result": "NOT_TRIGGERED",
+      "evidence": "Initial loss was 3.23 at epoch 1. Loss dropped to 0.17 by epoch 100. Well below initial loss before 20% budget consumption."
+    }
+  },
+
+  "training_diagnostics": {
+    "training_stability": "UNSTABLE",
+    "collapse_events": [
+      {"epoch": 300, "test_accuracy_drop_to": 0.760, "gradient_norm": 1.596},
+      {"epoch": 900, "test_accuracy_drop_to": 0.741, "gradient_norm": 1.429},
+      {"epoch": 1100, "test_accuracy_drop_to": 0.757, "gradient_norm": 3.051},
+      {"epoch": 3600, "test_accuracy_drop_to": 0.796, "gradient_norm": 1.993},
+      {"epoch": 5300, "test_accuracy_drop_to": 0.556, "gradient_norm": 1.622},
+      {"epoch": 8200, "test_accuracy_drop_to": 0.803, "gradient_norm": 0.631},
+      {"epoch": 8250, "test_accuracy_drop_to": 0.612, "gradient_norm": 10.491},
+      {"epoch": 10000, "test_accuracy_drop_to": 0.463, "gradient_norm": 20.589, "note": "catastrophic terminal collapse"}
+    ],
+    "best_epoch": 3850,
+    "best_test_accuracy": 0.986285,
+    "accuracy_plateau_range": "0.977-0.986 between epochs 2000-8150 with frequent drops",
+    "terminal_collapse": true,
+    "terminal_collapse_epoch": 10000,
+    "note": "Model reached peak at epoch 3850 (38.5% of budget). From epoch 6800 onward, accuracy slowly degraded from ~0.984 to ~0.979. Final epoch saw catastrophic collapse to 46.3%. The architecture appears to have a training stability problem that prevents it from holding gains."
+  },
+
+  "comparison_table": {
+    "candidate_test_accuracy": 0.986285,
+    "baseline_test_accuracy": 0.4532,
+    "candidate_params": 79808,
+    "baseline_params": 405023,
+    "candidate_flops": 34539609600000,
+    "baseline_flops": 121604105520000,
+    "candidate_param_efficiency": 809.18,
+    "baseline_param_efficiency": 8937.15,
+    "candidate_gradient_health": 0.488935,
+    "baseline_gradient_health": 0.006167
+  },
+
+  "verdict": "INCONCLUSIVE",
+  "verdict_rationale": "The candidate massively outperforms the baseline (98.6% vs 45.3%) with 5x fewer parameters and 3.5x fewer FLOPs, demonstrating that the information-theoretic approach captures modular arithmetic structure far better than a standard transformer. However, it fails SC1 (never reaches 99%, peaking at 98.6%) and fails SC2 (p=5 accuracy of 46.2% is catastrophically low and actually below the baseline's 61.5% on that prime). It passes only SC3 (accuracy/FLOP efficiency). The small-prime weakness appears structural: with a 50% train split, p=5 yields only ~6 training examples per residue class, insufficient for the syndrome refinement mechanism. Training instability (8 collapse events, terminal catastrophic failure at epoch 10000) further signals architectural fragility. The candidate cannot be ACCEPTed because it misses the pre-registered 99% threshold and fails on small primes. It cannot be REJECTed because it vastly exceeds the baseline, no failure criteria were triggered, and the gap to 99% is narrow at 0.4% (concentrated in data-scarce small primes)."
+}

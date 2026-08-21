@@ -1,0 +1,36 @@
+{
+  "architecture_name": "harmonic_phase_correlator",
+  "seed": 42,
+  "total_parameters": 160,
+  "learning_rate": 0.001,
+  "weight_decay": 0.06931471805599453,
+  "epochs_trained": 10000,
+  "wall_clock_seconds": 48.31092715263367,
+  "pre_registered_metrics": {
+    "test_accuracy_modular_addition": 1.0,
+    "compute_to_threshold_ratio": 1601280,
+    "samples_to_threshold_accuracy": 1668,
+    "gradient_health_mean_norm": 7.534762504114155e-09,
+    "param_efficiency_params_per_accuracy_point": 1.6
+  },
+  "threshold_epoch": 1,
+  "threshold_wall_seconds": 0.01310110092163086,
+  "final_train_accuracy": 1.0,
+  "final_train_loss": 1.5101042107456948e-09,
+  "per_prime_test_accuracy": {
+    "5": 1.0,
+    "7": 1.0,
+    "11": 1.0,
+    "13": 1.0,
+    "17": 1.0,
+    "19": 1.0,
+    "23": 1.0,
+    "29": 1.0,
+    "31": 1.0
+  },
+  "training_budget_used": {
+    "epochs": 10000,
+    "wall_clock_minutes": 0.8051821192105612,
+    "approx_flops": 16012800000
+  }
+}

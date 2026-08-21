@@ -1,0 +1,63 @@
+{
+  "spec_version": "2.0",
+  "architecture_name": "torus_rotation_compositor_v2",
+  "novel_component": {
+    "type": "modular_arithmetic",
+    "class": "circular_embedding_composition",
+    "ops_used": [
+      "frequency_circular_embed",
+      "rotation_compose",
+      "prime_harmonic_gate",
+      "geodesic_classify"
+    ]
+  },
+  "composition": {
+    "strategy": "sequential",
+    "hybrid_ratio": 1.0,
+    "num_layers": 4,
+    "layer_arrangement": [
+      {
+        "layer": 1,
+        "op": "frequency_circular_embed",
+        "applied_to": [
+          "a",
+          "b"
+        ],
+        "shared_weights": true,
+        "output_dim": 32
+      },
+      {
+        "layer": 2,
+        "op": "rotation_compose",
+        "input": "layer1_outputs",
+        "output_dim": 32,
+        "learned_params": 0
+      },
+      {
+        "layer": 3,
+        "op": "prime_harmonic_gate",
+        "input": [
+          "layer2_output",
+          "p"
+        ],
+        "output_dim": 32
+      },
+      {
+        "layer": 4,
+        "op": "geodesic_classify",
+        "input": "layer3_output",
+        "shared_embed": "layer1",
+        "output_dim": "p"
+      }
+    ]
+  },
+  "hyperparameters": {
+    "num_circles": 16,
+    "embedding_dim": 32,
+    "frequency_init": "evenly_spaced_0_to_2pi",
+    "temperature_init": 1.0,
+    "total_parameters": 177,
+    "refinement_of": "03d7c5957a78",
+    "refinement_type": "hyperparameter_reduction"
+  }
+}

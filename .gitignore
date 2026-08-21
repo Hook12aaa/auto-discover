@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.auto-discover/
+.superpowers/
+.skill-cheat-qa/
+.venv/
+.omc/

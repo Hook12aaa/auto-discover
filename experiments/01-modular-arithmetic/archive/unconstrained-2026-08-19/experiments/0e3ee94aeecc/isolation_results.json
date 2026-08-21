@@ -1,0 +1,16 @@
+{
+  "gate1_gradient_flow": {
+    "verdict": "PASS",
+    "details": "All parameters receive non-zero, finite gradients within [1e-8, 1e4]. Gradient ranges: embedding [2.11e-07, 1.77e-03], parity_acc [6.17e-06, 1.40e-02], compressor [4.11e-09, 3.11e-02], readout [7.79e-07, 9.36e-02]."
+  },
+  "gate2_output_range": {
+    "verdict": "FAIL",
+    "details": "Outputs in [205.47, 879.08] exceed [-100, 100] bound. No NaN/Inf. Root cause: iterative_belief_refiner additive feedback loop (h_full += ReLU(W_fb * scores)) amplifies h_full over T=2 iterations. Raw dot-product scores pre-refiner are bounded [1.88, 6.73], but feedback inflates h_full norms, producing larger correlations each iteration. The refiner creates unbounded positive feedback."
+  },
+  "gate3_toy_convergence": {
+    "verdict": "PASS",
+    "details": "Loss 21.7053->0.0000, acc=100.00% on p=5 modular addition (25 examples, 500 epochs, random=20%). Reached 80% by epoch 100, 100% by epoch 200."
+  },
+  "overall_verdict": "FAIL",
+  "failure_summary": "Gate 2 (output range) failed. The iterative_belief_refiner creates an unbounded positive feedback loop: h_full += ReLU(W_fb * scores) only adds non-negative values, and recomputing correlations on the enlarged h_full produces larger scores each iteration. Despite this, the architecture converges perfectly on toy problems (Gate 3), suggesting the relative ordering of scores carries correct information even at high magnitude. A fix would be to normalize scores by sqrt(224) or apply LayerNorm before correlation, but as specified the outputs exceed the [-100, 100] bound."
+}

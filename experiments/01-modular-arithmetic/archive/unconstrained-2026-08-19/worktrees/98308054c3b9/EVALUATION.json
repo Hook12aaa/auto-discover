@@ -1,0 +1,89 @@
+{
+  "experiment_hash": "98308054c3b9",
+  "genome_spec": "crt_channel_decomposer",
+  "verdict": "REJECT",
+  "seed": 42,
+  "evaluated_at": "2026-08-19",
+  "pre_registered_metrics": {
+    "primary": {
+      "test_accuracy_modular_addition": {
+        "candidate": 0.03876,
+        "baseline": 0.4532,
+        "ratio_to_baseline": 0.0855,
+        "assessment": "FAIL: 3.88% vs baseline 45.32%. Candidate is 11.7x worse."
+      }
+    },
+    "secondary": {
+      "compute_to_threshold_ratio": {
+        "candidate": null,
+        "baseline": null,
+        "assessment": "FAIL: Neither candidate nor baseline reached 99% threshold. Candidate never exceeded 9.4% test accuracy."
+      },
+      "samples_to_threshold_accuracy": {
+        "candidate": null,
+        "baseline": null,
+        "assessment": "FAIL: Threshold never reached."
+      },
+      "gradient_health_mean_norm": {
+        "candidate": 0.006574,
+        "baseline": 0.006167,
+        "assessment": "PASS: Gradient norms remained healthy throughout training. No exploding gradients."
+      },
+      "param_efficiency_params_per_accuracy_point": {
+        "candidate": 356.814,
+        "baseline": 8937.153,
+        "assessment": "MISLEADING: Lower ratio due to tiny model (1383 params) with near-zero accuracy. Not a meaningful advantage."
+      }
+    }
+  },
+  "success_criteria": {
+    "reaches_99pct_with_less_compute": {
+      "met": false,
+      "detail": "Test accuracy reached only 3.88%. Target was 99%. Not close."
+    },
+    "maintains_performance_across_primes": {
+      "met": false,
+      "detail": "Severe per-prime variance. p=5: 53.8%, p=7: 28.0%, p=13: 20.0%, all primes >= 11 (except 13) near or below random chance."
+    },
+    "higher_accuracy_per_flop_than_baseline": {
+      "met": false,
+      "detail": "Baseline achieved 45.32% test accuracy. Candidate achieved 3.88%. Baseline dominates at every compute level."
+    }
+  },
+  "failure_criteria": {
+    "gradient_explosion": {
+      "triggered": false,
+      "detail": "Max gradient norm was 0.040. Never exceeded 50."
+    },
+    "below_60pct_at_half_budget": {
+      "triggered": true,
+      "detail": "At epoch 5000 (50% of budget), test accuracy was 3.8%. Far below 60% threshold."
+    },
+    "loss_above_initial_at_20pct_budget": {
+      "triggered": false,
+      "detail": "Initial train loss 3.189. At epoch 2000 (20% budget), train loss was 2.566. Loss did decrease."
+    }
+  },
+  "training_dynamics_diagnostic": {
+    "classification": "plateau_with_collapse",
+    "description": "Train accuracy oscillated between 13-24% for first 3000 epochs with no clear upward trend. Around epoch 3000, training partially collapsed (train accuracy dropped to 12%, test to 3%). Post-collapse, the model slowly recovered train accuracy to ~16% but test accuracy remained stuck at 3-4% with steadily rising test loss, indicating severe overfitting on memorized patterns.",
+    "train_test_divergence": "Extreme. Test loss grew from 3.2 to 9.5 while train loss decreased from 3.2 to 2.8. The model memorized a subset of training data without learning generalizable structure.",
+    "per_prime_pattern": "Only p=5 (53.8%) showed meaningful learning, suggesting the CRT decomposition captures mod-5 residue structure but fails to compose it for larger primes. p=7 (28%) and p=13 (20%) showed weak partial learning. All primes >= 17 were at or below random chance."
+  },
+  "comparison_to_baseline": {
+    "candidate_test_accuracy": 0.03876,
+    "baseline_test_accuracy": 0.4532,
+    "candidate_params": 1383,
+    "baseline_params": 405023,
+    "candidate_epochs": 10000,
+    "baseline_epochs": 10000,
+    "baseline_dominates": true
+  },
+  "reject_reasons": [
+    "Primary metric 11.7x worse than baseline (3.88% vs 45.32%)",
+    "All three success criteria unmet",
+    "Failure criterion #2 triggered: test accuracy 3.8% at 50% compute budget (threshold: 60%)",
+    "Severe per-prime generalization failure: only p=5 above random",
+    "Extreme train-test divergence indicating memorization without generalization"
+  ]
+}

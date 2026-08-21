@@ -1,0 +1,50 @@
+{
+  "experiment_hash": "4eeea287a957",
+  "architecture_name": "harmonic_phase_correlator_v2",
+  "review_verdict": "KEEP",
+  "parameter_efficiency": {
+    "candidate_params": 160,
+    "baseline_params": 405023,
+    "baseline_reduction_factor": 2531.4,
+    "current_front_best_params": 353,
+    "front_reduction_factor": 2.21,
+    "params_per_accuracy_point": 1.6,
+    "baseline_params_per_accuracy_point": 8937.15,
+    "efficiency_ratio_vs_baseline": 5585.7
+  },
+  "pareto_dominance": {
+    "dominates_current_front": true,
+    "dominated_members": ["03d7c5957a78"],
+    "comparison": {
+      "03d7c5957a78": {
+        "architecture": "torus_rotation_compositor",
+        "accuracy": {"candidate": 1.0, "incumbent": 0.999403715133667, "candidate_better": true},
+        "params": {"candidate": 160, "incumbent": 353, "candidate_better": true},
+        "flops": {"candidate": 160128000, "incumbent": 35328240000, "candidate_better": true, "reduction_factor": 220.6}
+      }
+    },
+    "strict_dominance": true,
+    "dominance_summary": "Signal v2 strictly dominates the geometric variant on all three Pareto axes: higher accuracy (+0.06%), fewer parameters (2.2x), and far fewer FLOPs (221x)"
+  },
+  "spec_class_assessment": {
+    "class": "signal",
+    "fingerprint": "amplitude_weighter+correlation_classifier+harmonic_projector+phase_adder+prime_modulator|sequential_parallel_fork|modulate->project_parallel->add_phase->weight->classify",
+    "depth": 2,
+    "history": [
+      {"hash": "2ddafd9fcd03", "verdict": "INCONCLUSIVE", "reason": "init-encoded solution, no learning"},
+      {"hash": "4eeea287a957", "verdict": "ACCEPT", "reason": "genuine learning from random init confirmed"}
+    ],
+    "class_contribution": "Produced the search's best result. V2 resolved V1's init-encoding concern with random uniform initialization, confirming the architecture learns correct frequencies rather than having them pre-encoded."
+  },
+  "stale_pathway_detection": {
+    "is_stale": false,
+    "rationale": "Class improved from INCONCLUSIVE to ACCEPT at depth 2, now holds the search's best result on all metrics"
+  },
+  "search_contribution": {
+    "new_pareto_front_member": true,
+    "replaces_on_front": ["03d7c5957a78"],
+    "advances_search": true,
+    "contribution_type": "dominant_improvement",
+    "summary": "Replaces geometric variant as sole Pareto front member. 100% accuracy with 160 params in 1% of budget. The strongest result in the search by every pre-registered metric."
+  }
+}

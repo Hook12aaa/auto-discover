@@ -1,0 +1,31 @@
+{
+  "problem_restatements": [
+    "Quotient map decomposition: learn pi_p(a) +_p pi_p(b) for all 9 primes simultaneously. By CRT, reduces to learning addition in Z/NZ and projecting onto each factor.",
+    "Group action via Cayley's theorem: learn the left regular action of Z/pZ on itself. Group algebra multiplication e_a * e_b = e_{a+b mod p}. In diagonal basis, multiplication becomes coordinate-wise."
+  ],
+  "analogy_domain": "group theory / abstract algebra — Cayley's theorem, regular representation, group algebra",
+  "analogy": "In R[G] for abelian G, elements decompose over orthogonal idempotents. In diagonal basis, group algebra multiplication reduces to coordinate-wise multiplication. Architecture uses free embeddings + Hadamard product; optimizer discovers the best basis.",
+  "plan": {
+    "ops": [
+      "element_state_embed: Learned lookup a -> s_a in R^d. The element being acted upon. 31*d params.",
+      "action_orbit_embed: Separate lookup b -> g_b in R^d. The group action to apply. Cayley asymmetry. 31*d params.",
+      "cayley_product: Hadamard product z = s_a * g_b. Group algebra multiplication in diagonal basis. 0 params.",
+      "quotient_fiber_readout: Per prime p_i, linear W_i: R^d -> R^{p_i}. CRT projection. d*155 params total."
+    ],
+    "composition_strategy": "parallel_to_sequential",
+    "layer_arrangement": "{element_state_embed(a), action_orbit_embed(b)} -> cayley_product -> quotient_fiber_readout x 9",
+    "reasoning": "Hadamard in character basis IS the group operation. Free embeddings let optimizer find the best basis. Dual embedding encodes Cayley asymmetry."
+  },
+  "expected_outcome": ">95% accuracy with ~434 params (d=2). Hadamard provides multiplicative inductive bias. Free embeddings may discover novel representations beyond fixed circular basis.",
+  "falsification": "Fails if: (1) accuracy below baseline 45.3%, (2) optimizer can't find useful embeddings, (3) dual embedding hurts vs shared.",
+  "look_back": [
+    "Strict generalization of character-based approaches — if optimal solution is character-based, optimizer can reach it.",
+    "Permits non-character solutions exploiting multi-prime compression.",
+    "Generalizes to any finite abelian group."
+  ],
+  "fingerprint": {
+    "sorted_ops": ["action_orbit_embed", "cayley_product", "element_state_embed", "quotient_fiber_readout"],
+    "composition_strategy": "parallel_to_sequential",
+    "layer_arrangement": "{embed_state,embed_action}->cayley_product->readout_x9"
+  }
+}

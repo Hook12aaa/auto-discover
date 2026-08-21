@@ -1,0 +1,50 @@
+thesis: >
+  There exists a neural architecture that learns modular addition (a + b) mod p
+  for primes p in [5, 31] with substantially less compute than a standard
+  2-layer transformer, by exploiting mathematical structure intrinsic to the task
+  rather than relying on general-purpose approximation.
+
+null_hypothesis: >
+  A standard 2-layer transformer with softmax scoring trained on the same data
+  with the same compute budget.
+
+success_criteria:
+  - "Reaches 99% test accuracy on modular addition (mod p for p in [5, 31]) using less than 50% of the baseline's compute-to-threshold"
+  - "Maintains performance across all tested primes without per-prime tuning"
+  - "Achieves higher test accuracy per FLOP than the baseline across the full compute budget"
+
+failure_criteria:
+  - "Gradient norms exceed 50 for 3 consecutive checkpoints"
+  - "Test accuracy does not exceed 60% after consuming 50% of the compute budget"
+  - "Loss does not decrease below initial loss after consuming 20% of the compute budget"
+
+pre_registered_metrics:
+  primary: test_accuracy_modular_addition
+  secondary:
+    - compute_to_threshold_ratio
+    - samples_to_threshold_accuracy
+    - gradient_health_mean_norm
+    - param_efficiency_params_per_accuracy_point
+  forbidden:
+    - raw_loss_comparison_without_normalization
+    - cherry_picked_single_prime_accuracy
+
+seeds: [42, 137, 256, 512, 1024]
+
+training_budget:
+  max_compute_flops: 1e15
+  max_epochs: 10000
+  max_wall_clock_minutes: 120
+
+genome_constraints:
+  modulus_range: [5, 31]
+  embedding_dim_range: [8, 512]
+  max_parameters: 500000
+
+variance_tolerance: 0.15
+
+references:
+  - "Gromov 2023 - Modular arithmetic representations (arXiv:2301.02679)"
+  - "Doshi et al 2024 - Modular Polynomials (arXiv:2406.03495)"
+  - "Murray 2023 - Phase codes in RNNs for modular arithmetic (arXiv:2310.07908)"
+  - "Bronstein et al 2021 - Geometric Deep Learning (arXiv:2104.13478)"

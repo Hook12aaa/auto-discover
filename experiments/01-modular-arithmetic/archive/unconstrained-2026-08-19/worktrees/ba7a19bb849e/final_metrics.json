@@ -1,0 +1,29 @@
+{
+  "architecture": "syndrome_refinement_decoder_v2",
+  "experiment_hash": "ba7a19bb849e",
+  "seed": 42,
+  "total_parameters": 79808,
+  "epochs_trained": 10000,
+  "best_epoch": 3850,
+  "final_train_loss": 0.021002,
+  "test_accuracy_modular_addition": 0.986285,
+  "per_prime_test_accuracy": {
+    "5": 0.461538,
+    "7": 0.84,
+    "11": 0.934426,
+    "13": 1.0,
+    "17": 1.0,
+    "19": 0.994475,
+    "23": 0.996226,
+    "29": 0.985748,
+    "31": 1.0
+  },
+  "samples_to_threshold_accuracy": null,
+  "threshold_epoch": null,
+  "gradient_health_mean_norm": 0.488935,
+  "param_efficiency_params_per_accuracy_point": 809.18,
+  "total_flops": 34539609600000,
+  "wall_clock_seconds": 355.63,
+  "learning_rate": 0.01,
+  "verdict": "DONE_WITH_CONCERNS"
+}

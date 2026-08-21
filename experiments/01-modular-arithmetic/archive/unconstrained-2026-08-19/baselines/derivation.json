@@ -1,0 +1,107 @@
+{
+  "learning_rate": {
+    "value": 0.003136114806806177,
+    "derivation_method": "loss_gradient_probe_with_validation",
+    "input_measurement": {
+      "initial_loss": 3.5526185035705566,
+      "full_batch_gradient_norm": 1.064334917577453,
+      "theoretical_lr": 0.03136114806806177,
+      "formula": "0.01 * L / ||grad||^2 \u2014 targets 1% loss reduction per step in quadratic approximation",
+      "validation": "Tested 5 candidates (0.1x to 10x theory) for 100 steps each; selected lowest final loss among stable, decreasing runs",
+      "search_results": {
+        "0.003136114806806177": {
+          "final_loss": 0.00029994058422744274,
+          "stable": true,
+          "decreasing": true
+        },
+        "0.00940834442041853": {
+          "final_loss": 0.002905488945543766,
+          "stable": true,
+          "decreasing": true
+        },
+        "0.03136114806806177": {
+          "final_loss": 3.5895235538482666,
+          "stable": false,
+          "decreasing": false
+        },
+        "0.09408344420418531": {
+          "final_loss": 20.215421676635742,
+          "stable": false,
+          "decreasing": false
+        },
+        "0.1": {
+          "final_loss": 18.52448844909668,
+          "stable": false,
+          "decreasing": false
+        }
+      }
+    }
+  },
+  "weight_decay": {
+    "value": 0.022102098400723,
+    "derivation_method": "budget_based_decay_targeting",
+    "input_measurement": {
+      "max_epochs": 10000,
+      "learning_rate": 0.003136114806806177,
+      "target_shrinkage": 0.5,
+      "formula": "ln(2) / (max_epochs * lr) \u2014 targets 50% weight magnitude shrinkage over training budget without learning signal"
+    }
+  },
+  "optimizer": {
+    "value": "AdamW",
+    "derivation_method": "default_adaptive",
+    "input_measurement": {
+      "rationale": "AdamW provides per-parameter adaptive learning rates; decoupled weight decay avoids coupling regularization to gradient magnitude"
+    }
+  },
+  "batch_size": {
+    "value": 1668,
+    "derivation_method": "dataset_size_analysis",
+    "input_measurement": {
+      "train_set_size": 1668,
+      "rationale": "Full batch gives exact gradient; dataset fits in memory"
+    }
+  },
+  "dropout": {
+    "value": 0.0,
+    "derivation_method": "regularization_strategy",
+    "input_measurement": {
+      "param_to_sample_ratio": 242.8195443645084,
+      "rationale": "With full-batch training, dropout adds noise to an already exact gradient; weight decay is the appropriate regularization for this regime"
+    }
+  },
+  "architecture": {
+    "d_model": 128,
+    "n_heads": 4,
+    "d_ff": 512,
+    "n_layers": 2,
+    "num_params": 405023,
+    "norm_first": true,
+    "derivation": {
+      "d_model": "128 gives 405023 params within max_parameters=500000",
+      "n_heads": "d_model/32=4, 32 dims per head",
+      "d_ff": "4*d_model=512",
+      "n_layers": "Per null_hypothesis declaration",
+      "norm_first": "Pre-LN for gradient stability with deep residual paths",
+      "pooling": "Mean over 3 positions \u2014 all inputs (a, b, p) contribute equally to the answer"
+    }
+  },
+  "train_fraction": {
+    "value": 0.5,
+    "derivation_method": "residue_coverage_analysis",
+    "input_measurement": {
+      "primes": [
+        5,
+        7,
+        11,
+        13,
+        17,
+        19,
+        23,
+        29,
+        31
+      ],
+      "min_residue_appearances": "At 50%, each residue appears ~p/2 times: min 2 for p=5"
+    }
+  }
+}

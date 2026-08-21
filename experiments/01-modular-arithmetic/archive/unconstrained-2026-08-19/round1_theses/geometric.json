@@ -1,0 +1,32 @@
+{
+  "problem_restatements": [
+    "Each prime p defines a discrete rotation group C_p — the p equally-spaced points on a unit circle. Modular addition is composition of rotations: (a + b) mod p corresponds to rotating by angle 2*pi*a/p then by 2*pi*b/p on the p-point circle. The task is to learn this rotation composition across 9 different circle discretizations simultaneously.",
+    "The integers Z fiber over each Z/pZ via the quotient map n -> n mod p. The 9 primes define 9 fibers of a discrete fiber bundle over the set of primes. The task is to learn the bundle projection (integer -> residue class) and the fiberwise group operation (addition on each fiber) simultaneously, where different fibers have different group orders."
+  ],
+  "analogy_domain": "geometry / topology / symmetry",
+  "analogy": "Rotation composition on the circle group SO(2). Two rotations by angles theta_1 and theta_2 compose to a rotation by theta_1 + theta_2. On discrete subgroups C_p of SO(2), this composition is exactly addition mod p. The key insight: instead of learning a lookup table for (a, b, p) -> output, embed inputs as rotations on circles and compose them — which automatically yields the correct modular arithmetic structure. The multi-prime aspect maps to a product of K independent circles (a torus T^K), where each circle can lock onto a different prime's frequency.",
+  "plan": {
+    "ops": [
+      "frequency_circular_embed: Maps integer a to K points on K independent unit circles via a -> {(cos(a * omega_k + phi_k), sin(a * omega_k + phi_k)) | k = 1..K}, where omega_k (frequency) and phi_k (phase offset) are learned scalars. The linear dependence on a enforces cyclic group structure.",
+      "rotation_compose: Given two circular embeddings, computes rotation composition via angle-addition identity: (cos a * cos b - sin a * sin b, cos a * sin b + sin a * cos b). Complex multiplication on each circle independently. Zero learned parameters.",
+      "prime_harmonic_gate: Maps prime p to weight vector w(p) in R^K via learned embedding table. Applied as element-wise scaling of K circle outputs after rotation composition.",
+      "geodesic_classify: For each candidate output c, embeds c using shared frequency_circular_embed, computes prime-weighted geodesic proximity: score(c) = sum_k w_k(p) * cos(Delta_theta_k(c)). Learned temperature tau scales scores."
+    ],
+    "composition_strategy": "sequential pipeline preserving circular topology end-to-end",
+    "layer_arrangement": "L1: frequency_circular_embed(a), frequency_circular_embed(b) -> two 2K-dim vectors. L2: rotation_compose (parameter-free) -> one 2K-dim vector. L3: prime_harmonic_gate(p) -> K weights broadcast-multiplied. L4: geodesic_classify with shared embed for candidates -> p logits.",
+    "reasoning": "Z/pZ is isomorphic to C_p, the cyclic subgroup of SO(2). Addition mod p IS rotation composition. Linear parametrization a -> a * omega_k forces a group homomorphism. If omega_k locks to 2*pi/p, generalization is automatic for ALL (a,b) pairs."
+  },
+  "expected_outcome": "Test accuracy substantially above 45.3% baseline, potentially approaching 99%, because frequency parametrization forces learning cyclic group structure rather than memorizing.",
+  "falsification": "If test accuracy does not significantly exceed 45.3%: frequency parameters failed to converge to 2*pi/p values. If train accuracy also low: pipeline too constrained. If accuracy high for some primes but random for others: gating failed to distribute circles.",
+  "look_back": [
+    "Alternative derivation via Fourier analysis: characters of Z/pZ are chi_j(a) = exp(2*pi*i*j*a/p), exactly the circular embeddings. Convolution theorem states chi_j(a+b mod p) = chi_j(a)*chi_j(b), exactly rotation_compose.",
+    "Generalizes to any finite group by replacing circles with appropriate group manifold.",
+    "Frequency parametrization (2K params) vs free lookup (31*2K params) is the critical inductive bias preventing memorization.",
+    "Primary risk: sharp narrow minima at omega=2*pi*n/p. Mitigate with evenly-spaced initialization, K>>9 circles, LR annealing."
+  ],
+  "fingerprint": {
+    "sorted_ops": ["frequency_circular_embed", "geodesic_classify", "prime_harmonic_gate", "rotation_compose"],
+    "composition_strategy": "sequential",
+    "layer_arrangement": "embed->compose->gate->classify"
+  }
+}

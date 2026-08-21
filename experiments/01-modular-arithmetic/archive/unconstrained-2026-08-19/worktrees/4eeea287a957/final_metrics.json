@@ -1,0 +1,43 @@
+{
+  "experiment_hash": "4eeea287a957",
+  "architecture_name": "harmonic_phase_correlator_v2",
+  "refinement_of": "2ddafd9fcd03",
+  "refinement_type": "random_init_to_test_learning",
+  "seed": 42,
+  "total_parameters": 160,
+  "learning_rate": 0.01,
+  "weight_decay": 0.006931471805599453,
+  "epochs_trained": 100,
+  "wall_clock_seconds": 1.6772489547729492,
+  "pre_registered_metrics": {
+    "test_accuracy_modular_addition": 1.0,
+    "compute_to_threshold_ratio": 160128000,
+    "samples_to_threshold_accuracy": 166800,
+    "gradient_health_mean_norm": 0.026571827844933348,
+    "param_efficiency_params_per_accuracy_point": 1.6
+  },
+  "threshold_epoch": 100,
+  "threshold_wall_seconds": 1.6772310733795166,
+  "final_train_accuracy": 1.0,
+  "final_train_loss": 0.00032059302298855993,
+  "per_prime_test_accuracy": {
+    "5": 1.0,
+    "7": 1.0,
+    "11": 1.0,
+    "13": 1.0,
+    "17": 1.0,
+    "19": 1.0,
+    "23": 1.0,
+    "29": 1.0,
+    "31": 1.0
+  },
+  "initial_loss": 3.7695977575554447,
+  "initial_test_accuracy": 0.5271317958831787,
+  "frequency_init": "random_uniform_0_to_1",
+  "training_budget_used": {
+    "epochs": 100,
+    "max_epochs": 10000,
+    "wall_clock_minutes": 0.02795414924621582,
+    "epochs_used_fraction": 0.01
+  }
+}

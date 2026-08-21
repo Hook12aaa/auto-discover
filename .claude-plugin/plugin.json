@@ -1,0 +1,6 @@
+{
+  "name": "auto-discover",
+  "version": "0.1.0",
+  "description": "Orchestrator for autonomous ML architectural discovery. Confines the AI to proposing typed genome specs, pre-registers every metric, validates novel components in isolation, and judges candidates against null baselines and matched-budget controls across seeds.",
+  "entryPoint": "CLAUDE.md"
+}
