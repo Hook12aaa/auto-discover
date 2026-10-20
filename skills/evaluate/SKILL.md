@@ -7,6 +7,13 @@ description: "Trigger /evaluate when auto-discover dispatches a completed build-
 
 # Evaluate
 
+## Contract
+
+- **Reads**: `<worktree-path>/training_metrics.json`, `<worktree-path>/final_metrics.json`, `pre_registered_metrics` from dispatch prompt
+- **Writes**: `<worktree-path>/EVALUATION.json`
+- **References**: `references/training-diagnostics.md`, `references/metric-extraction.md`
+- **Verdicts**: ACCEPT, REJECT, INCONCLUSIVE
+
 <HARD-GATE>
 Do NOT emit a verdict without extracting ALL pre-registered metrics via executed scripts. STOP and run the extraction scripts first.
 </HARD-GATE>
@@ -25,11 +32,11 @@ Do NOT classify training dynamics without restricting to operational trajectory 
 
 ## Anti-Pattern
 
-**"The loss plateaued cleanly at a high accuracy, this is clearly a good candidate — ACCEPT."** A clean plateau is a training-run observation, not a verdict. evaluate asks one question: did this run produce usable, valid metrics? Whether the run grokked, plateaued, or collapsed is recorded as a diagnostic field for review-strategy and evidence-report to read later — it does not decide ACCEPT, REJECT, or INCONCLUSIVE here.
+**"The loss plateaued cleanly at a high accuracy, this is clearly a good candidate — ACCEPT."** A clean plateau is a training-run observation, not a verdict. evaluate asks one question: did this run produce usable, valid metrics? Whether the run plateaued or collapsed is recorded as a diagnostic field for review-strategy and evidence-report to read later — it does not decide ACCEPT, REJECT, or INCONCLUSIVE here.
 
 ## Core Principle
 
-Evaluate scores a single trained candidate: did it produce usable metrics? Training-run dynamics are observations, not the verdict. v1 asked "did this model converge?" and that answer WAS the verdict; evaluate asks "did this model produce metrics?" — the convergence question moves one level up, to converge, where it belongs.
+Evaluate scores a single trained candidate: did it produce usable metrics? Training-run dynamics are observations, not the verdict.
 
 ## Process Flow
 
@@ -64,35 +71,17 @@ The dispatch prompt carries the worktree path and the pre_registered_metrics lis
 
 ### 2. Layer 1: Data Validation
 
-Execute a script that checks:
-- Every metric named in pre_registered_metrics.primary and .secondary has a corresponding present, numeric value in final_metrics.json.
-- No metric value is NaN or Inf.
-- final_metrics.json contains trainable_params.
-
-FAIL any check → REJECT. Reason: data validation failure. List every failing check, not just the first.
+Read `references/training-diagnostics.md` for data validation checks. Read `references/metric-extraction.md` for metric presence and validity rules. Execute a script that runs every data validation check. FAIL any check → REJECT. List every failing check, not just the first.
 
 ### 3. Layer 2: Training Forensics
 
-Execute a script that checks the full training_metrics.json series, not just the final checkpoint:
-- No checkpoint contains NaN or Inf in any tracked value.
-- Gradient norm never exceeds the declared or derived explosion threshold at any checkpoint.
-- The run completed — it did not exit mid-series with an incomplete checkpoint count relative to the declared max_epochs or max_wall_clock_minutes.
+Read `references/training-diagnostics.md` for forensic checks, thresholds, and failure conditions. Execute a script that runs every forensic check against the full training_metrics.json series. FAIL any check → REJECT. Report which checks failed and at which checkpoint.
 
-FAIL any check → REJECT. Reason: training instability or incomplete run. Report which checks failed and at which checkpoint.
+### 4. Classify Training Dynamics
 
-### 4. Classify Training Dynamics — the Significance Check
+Read `references/training-diagnostics.md` § Trajectory Classification for diagnostic field vocabulary and recording rules. Execute a script that classifies the run's trajectory from the training_metrics.json series and records the diagnostic fields. These fields are inputs for review-strategy and evidence-report, never the verdict.
 
-This is where "significance" is checked — not statistical significance against a baseline (that comparison is forbidden here, per the third HARD-GATE, and belongs to null-baseline-gate) but whether this run's terminal reading is a settled, trustworthy measurement or a budget-truncated snapshot still in flux.
-
-After both layers pass, execute a script that classifies the run's trajectory from the training_metrics.json series and records it as diagnostic fields — inputs for review-strategy and evidence-report, never the verdict:
-- `accuracy_trajectory`: stable_high / stable_moderate / plateau_low_accuracy / spike_then_drop / budget_exhausted / diverged
-- `accuracy_trajectory_shape`: monotonic_rise / plateau / spike_then_drop / no_improvement / oscillating — the curve's shape, without naming why it takes that shape
-- `compute_to_threshold`: FLOPs or samples to reach each pre-registered accuracy threshold; `"unreached"` if the run never crossed it — a first-class value, not an error or null
-- `train_test_gap_trajectory`: converging / diverging / stable / oscillating
-- `peak_accuracy`, `peak_epoch`
-- `collapse_detected`: true if the primary metric spiked and then fell back after peaking
-
-If the run's trajectory never stabilized before hitting a budget bound (accuracy_trajectory == budget_exhausted) and no forensics check failed, this is grounds for INCONCLUSIVE, not REJECT — nothing failed, but the terminal snapshot is a budget-limited reading rather than a completed measurement, so it cannot yet be trusted as this candidate's settled result.
+If `accuracy_trajectory` is `budget_exhausted` and no forensics check failed, emit INCONCLUSIVE — the terminal snapshot is a budget-limited reading, not a completed measurement.
 
 ### 5. Write EVALUATION.json
 
@@ -104,8 +93,8 @@ Apply the decision table:
 
 | Layer 1 | Layer 2 | Trajectory | Verdict |
 |---|---|---|---|
-| PASS | PASS | Stabilized | ACCEPT |
-| PASS | PASS | budget_exhausted, unstabilized | INCONCLUSIVE |
+| PASS | PASS | `accuracy_trajectory` is not `budget_exhausted` | ACCEPT |
+| PASS | PASS | `accuracy_trajectory` is `budget_exhausted` | INCONCLUSIVE |
 | FAIL | -- | -- | REJECT |
 | PASS | FAIL | -- | REJECT |
 
@@ -122,12 +111,12 @@ Apply the decision table:
 
 | You think... | Reality |
 |---|---|
-| "The metrics are right there in final_metrics.json, I can just read them" | Run the validation script. Manual reading misses NaN/Inf and silently-absent fields that a script catches every time. |
-| "The loss curve clearly converged, this is a good result" | accuracy_trajectory is a diagnostic field, not the verdict. Run Layer 1 and Layer 2 and let the decision table decide. |
-| "It plateaued and then collapsed, that's obviously a REJECT" | Log collapse as collapse_detected for review-strategy. It does not fail Layer 1 or Layer 2 unless it produced NaN/Inf or an incomplete run. |
-| "This clearly grokked — the accuracy spiked at epoch 3000" | Log the trajectory shape: accuracy_trajectory=spike_then_drop with the spike epoch, peak value, and final value recorded. State the shape, not the story. |
-| "The candidate is clearly worse than the baseline, REJECT it" | Skip baseline comparison here. That comparison runs once at null-baseline-gate, on the final candidate only. |
-| "It ran out of budget without stabilizing, that's a training failure" | Use INCONCLUSIVE, not REJECT. REJECT is for crashes and instability; an unstabilized budget-limited run is INCONCLUSIVE. |
+| "The metrics are right there in final_metrics.json, I can just read them" | Run the validation script. Read `references/metric-extraction.md` for what the script checks. |
+| "The loss curve clearly converged, this is a good result" | Treat accuracy_trajectory as a diagnostic field, not the verdict. Run Layer 1 and Layer 2 and apply the decision table. |
+| "It plateaued and then collapsed, that's obviously a REJECT" | Write collapse_detected for review-strategy. Keep the Layer 1 and Layer 2 verdicts unchanged unless NaN/Inf or an incomplete run occurred. |
+| "This clearly grokked — the accuracy spiked at epoch 3000" | Write the trajectory shape per `references/training-diagnostics.md` § Trajectory Classification. Name the shape, not the phenomenon. |
+| "The candidate is clearly worse than the baseline, REJECT it" | Reject baseline comparison here. That comparison runs once at null-baseline-gate, on the final candidate only. |
+| "It ran out of budget without stabilizing, that's a training failure" | Emit INCONCLUSIVE, not REJECT. REJECT is for crashes and instability; an unstabilized budget-limited run is INCONCLUSIVE. |
 
 ## Red Flags
 

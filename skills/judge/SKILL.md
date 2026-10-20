@@ -7,6 +7,13 @@ description: "Trigger /judge when auto-discover needs an independent scoring of 
 
 # Judge
 
+## Contract
+
+- **Reads**: `<worktree-path>/final_metrics.json`, `<worktree-path>/reproducibility_result.json`, `.auto-discover/hypothesis.yaml`, `<worktree-path>/null_baseline_result.json`, `.auto-discover/experiments/<hash>/gates/*.json`
+- **Writes**: `<worktree-path>/judge_verdict.json` (schema: `references/scoring-rubric.md` § judge_verdict.json Fields)
+- **References**: `references/scoring-rubric.md`
+- **Verdicts**: JUDGE_CONFIRMS, JUDGE_REFUTES
+
 <HARD-GATE>
 Do NOT proceed if the proposer or trainer is serving as judge. STOP and dispatch a separate agent.
 </HARD-GATE>
@@ -85,7 +92,7 @@ Do not hand off `genome_spec.json` or any description of the novel component's s
 
 ### 4. Score Against Pre-Registered Metrics Only
 
-The judge computes or reads the primary and secondary metric values from the metrics manifest and compares them against `pre_registered_metrics` and the success thresholds in the hypothesis. The judge does not compute new metrics, does not re-derive alternate scoring functions, and does not adjust thresholds based on how "close" a candidate came — close is not passing.
+Read `references/scoring-rubric.md` § Criteria for the complete scoring criteria and their weights. Score the primary and secondary metric values from the metrics manifest against the pre-registered thresholds. Read `references/scoring-rubric.md` § Scope Limits for what the judge is and is not permitted to do.
 
 ### 5. Verify Prior Gates
 
@@ -97,18 +104,7 @@ Compare the primary metric's value (using `metric_optimized` if a threshold/cali
 
 ### 7. Write Judge Verdict
 
-Write `judge_verdict.json` to the experiment directory:
-
-```json
-{
-  "status": "<JUDGE_CONFIRMS|JUDGE_REFUTES>",
-  "judge_agent_id": "<identifier distinct from proposer/trainer>",
-  "prior_gates_passed": <bool>,
-  "primary_metric": {"name": "<name>", "value": <float>, "threshold": <float>, "meets_threshold": <bool>},
-  "secondary_metrics": [{"name": "<name>", "value": <float>, "threshold": <float or null>, "meets_threshold": <bool or null>}],
-  "reason": "<one-line explanation>"
-}
-```
+Read `references/scoring-rubric.md` § judge_verdict.json Fields for the output schema. Write `judge_verdict.json` to the experiment directory with every field from the schema populated.
 
 ### 8. Emit Verdict
 
@@ -126,11 +122,11 @@ Emit `JUDGE_CONFIRMS` only if every prior gate passed AND the primary metric mee
 
 | You think... | Reality |
 |---|---|
-| "I trained this, I already know if it worked" | The trainer does not judge its own output. Dispatch a separate agent with no memory of the run. |
+| "I trained this, I already know if it worked" | Dispatch a separate agent with no memory of the run. The trainer does not judge its own output. |
 | "Seeing the architecture would help me judge fairly" | Read results, not architecture. Withholding the genome spec is deliberate, not an oversight. |
-| "This candidate came close to the threshold, that's basically confirming" | Close is not passing. Compare the number against the exact declared threshold. |
-| "A new metric captures what actually matters here better" | Use only pre_registered_metrics. Introducing a new metric at judgment time is post-hoc rationalization. |
-| "One upstream gate had a minor issue, the overall result is still strong" | Route any upstream gate FAIL straight to JUDGE_REFUTES. Never re-weigh a failed gate against other evidence. |
+| "This candidate came close to the threshold, that's basically confirming" | Check the number against the exact declared threshold. A near-miss is not passing. |
+| "A new metric captures what actually matters here better" | Reject any new metric at judgment time. Read `references/scoring-rubric.md` § Scope Limits. |
+| "One upstream gate had a minor issue, the overall result is still strong" | Emit JUDGE_REFUTES for any upstream gate FAIL. Read `references/scoring-rubric.md` § Verdict. |
 
 ## Red Flags
 
@@ -153,8 +149,8 @@ Emit `JUDGE_CONFIRMS` only if every prior gate passed AND the primary metric mee
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-experiment_path="${1:?Usage: judge <experiment_path>}"
-verdict_file="${experiment_path}/judge_verdict.json"
+worktree_path="${1:?Usage: judge <worktree_path>}"
+verdict_file="${worktree_path}/judge_verdict.json"
 if [[ ! -f "$verdict_file" ]]; then
   echo "VERDICT: JUDGE_REFUTES"
   exit 1

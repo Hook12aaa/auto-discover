@@ -7,6 +7,13 @@ description: "Trigger /reproducibility-gate when auto-discover needs multi-seed 
 
 # Reproducibility Gate
 
+## Contract
+
+- **Reads**: `.auto-discover/hypothesis.yaml` (`seeds`, `variance_tolerance`, `pre_registered_metrics`), leading candidate's `genome_spec.json`
+- **Writes**: `<worktree-path>/reproducibility_result.json` (schema: `references/variance-rules.md` § Result Fields), `.auto-discover/experiments/<hash>/seeds/<seed>/` per seed
+- **References**: `references/variance-rules.md`
+- **Verdicts**: REPRODUCIBILITY_PASSED, REPRODUCIBILITY_FAILED
+
 <HARD-GATE>
 Do NOT declare reproducible without running every declared seed. STOP and run the full set.
 </HARD-GATE>
@@ -80,28 +87,15 @@ Invoke `evaluate` for each seed's run. If any seed does not receive an `ACCEPT` 
 
 ### 4. Compute Variance
 
-Compose a script that, for each metric in `pre_registered_metrics`, collects the value from every seed's `final_metrics.json` and computes the standard deviation (or coefficient of variation, if the hypothesis declares that as the variance measure). Emit structured JSON per metric: `{"metric": "<name>", "values": [...], "mean": <float>, "std": <float>, "cv": <float>}`.
+Read `references/variance-rules.md` § Variance Computation for the per-metric computation rules and output format. Compose a script that, for each metric in `pre_registered_metrics`, collects the value from every seed's `final_metrics.json` and computes the quantities specified in the reference doc.
 
 ### 5. Compare Against Tolerance
 
-Read `variance_tolerance` from the hypothesis for each metric (a single tolerance applies to all metrics, or per-metric tolerances are declared — follow whichever the hypothesis specifies). PASS per-metric if the computed variance measure is at or below the declared tolerance. The gate as a whole passes only if every pre-registered metric's variance is within tolerance.
+Read `references/variance-rules.md` § Tolerance Check for the tolerance source and per-metric PASS condition. Read `variance_tolerance` from the hypothesis and apply it as specified in the reference doc. The gate as a whole passes only if every pre-registered metric's variance is within tolerance.
 
 ### 6. Write Result
 
-Write `reproducibility_result.json`:
-
-```json
-{
-  "status": "<REPRODUCIBILITY_PASSED|REPRODUCIBILITY_FAILED>",
-  "seeds_declared": [<int>, ...],
-  "seeds_run": [<int>, ...],
-  "seeds_accepted": [<int>, ...],
-  "variance_table": [
-    {"metric": "<name>", "values": [...], "mean": <float>, "std": <float>, "tolerance": <float>, "within_tolerance": <bool>}
-  ],
-  "reason": "<one-line explanation naming which seed or metric failed, if any>"
-}
-```
+Read `references/variance-rules.md` § Result Fields for the output schema. Write `reproducibility_result.json` with every field from the schema populated.
 
 ### 7. Emit Verdict
 
@@ -120,7 +114,7 @@ Emit `REPRODUCIBILITY_PASSED` only if every declared seed's evaluate verdict is 
 | You think... | Reality |
 |---|---|
 | "The first few seeds converged nicely, that's a strong signal" | Run the full declared set. A pattern in a subset is not the pre-registered evidence unit. |
-| "One seed diverged, drop it and average the rest" | Include every seed in the variance computation. A diverging seed fails the gate — never silently exclude it. |
+| "One seed diverged, drop it and average the rest" | Keep every seed in the variance computation. A diverging seed fails the gate — never exclude it. |
 | "The variance is a little over tolerance but the trend is right" | Apply the tolerance as a hard threshold set at pre-registration, not a target to approach. |
 | "Seeds are basically interchangeable, one representative run is enough" | Run all declared seeds. Single-seed results are noise — seeds are not interchangeable until proven so. |
 | "This secondary metric's variance is high but the primary metric is fine" | Check every pre-registered metric against tolerance, not only the primary one. |
@@ -146,8 +140,8 @@ Emit `REPRODUCIBILITY_PASSED` only if every declared seed's evaluate verdict is 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-experiment_path="${1:?Usage: reproducibility-gate <experiment_path>}"
-result_file="${experiment_path}/reproducibility_result.json"
+worktree_path="${1:?Usage: reproducibility-gate <worktree_path>}"
+result_file="${worktree_path}/reproducibility_result.json"
 if [[ ! -f "$result_file" ]]; then
   echo "VERDICT: REPRODUCIBILITY_FAILED"
   exit 1

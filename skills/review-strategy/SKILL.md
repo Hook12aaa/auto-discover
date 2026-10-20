@@ -7,6 +7,13 @@ description: "Trigger /review-strategy when auto-discover dispatches an ACCEPTed
 
 # Review Strategy
 
+## Contract
+
+- **Reads**: `evaluation_result` (from EVALUATION.json), `variant_params` (from final_metrics.json), `baseline_params` (from baseline_metrics.json), `baseline_primary` (baseline's primary metric value), `metric_direction` (from experiment-tree.json), `pareto_front` (current front) from dispatch prompt
+- **Writes**: `<worktree-path>/REVIEW.json`
+- **References**: `references/pareto-computation.md`, `references/efficiency-thresholds.md`
+- **Verdicts**: KEEP, DISCARD, KEEP_WITH_CONCERNS
+
 <HARD-GATE>
 Do NOT emit KEEP without checking Pareto dominance via an executed script. STOP and run the dominance check.
 </HARD-GATE>
@@ -17,7 +24,7 @@ Do NOT discard a variant if its spec class was UNTRIED before this attempt. STOP
 
 ## Anti-Pattern
 
-**"The metric improved, obviously keep it."** Raw improvement ignores what it cost: a variant that gains marginal accuracy at disproportionate parameter cost is not automatically worth keeping, and a variant that ties the front while exploring genuinely new territory is worth more than its raw number alone shows. review-strategy scores contribution to the search, not the metric in isolation.
+**"The metric improved, obviously keep it."** Raw improvement ignores what it cost: a variant that gains marginal accuracy at disproportionate parameter cost is not automatically worth keeping, and a variant that ties the front while exploring new territory is worth more than its raw number alone shows. review-strategy scores contribution to the search, not the metric in isolation.
 
 ## Core Principle
 
@@ -42,12 +49,12 @@ digraph review_strategy {
 
 ## Checklist
 
-1. Read evaluation_result, variant_params, baseline_params, spec_class status, experiment_history, and complexity_thresholds from the dispatch prompt.
-2. Compute param_ratio and efficiency from the inline numbers.
-3. Classify this variant's change relative to its parent in experiment_history.
-4. Check Pareto dominance against the inline pareto_front.
-5. Detect stale pathways within this variant's spec class.
-6. Apply the decision matrix and select the verdict.
+1. Read evaluation_result, variant_params, baseline_params, baseline_primary, metric_direction, and pareto_front from the dispatch prompt.
+2. Compute param_ratio and efficiency per `references/efficiency-thresholds.md`.
+3. Classify this variant's change relative to its parent per `references/efficiency-thresholds.md` § Change Classification.
+4. Check Pareto dominance against the inline pareto_front per `references/pareto-computation.md`.
+5. Detect stale pathways per `references/efficiency-thresholds.md` § Stale Pathway Detection.
+6. Apply the decision matrix per `references/efficiency-thresholds.md` § Decision Matrix.
 7. Write REVIEW.json to the variant worktree.
 
 ## Step Details
@@ -56,63 +63,33 @@ digraph review_strategy {
 
 Read from the dispatch prompt:
 - `evaluation_result` — the ACCEPT verdict and the primary metric's value from evaluate's EVALUATION.json.
-- `variant_params`, `baseline_params` — trainable parameter counts as integers, from final_metrics.json and the locked baseline respectively.
-- `spec_class_status` — this variant's spec-class fingerprint and its status (UNTRIED or EXPLORING) immediately before this variant was added.
-- `experiment_history` — the array of prior nodes in this spec class: their config, primary metric, params, and depth.
+- `variant_params` — trainable parameter count as integer, from final_metrics.json.
+- `baseline_params` — baseline trainable parameter count as integer, from baseline_metrics.json.
+- `baseline_primary` — baseline's primary metric value, from baseline_metrics.json.
+- `metric_direction` — `maximize` or `minimize`, from experiment-tree.json.
 - `pareto_front` — the current Pareto front array from the experiment tree.
-- `complexity_thresholds` — efficiency and param_ratio cutoffs, if the hypothesis declares them; otherwise the defaults in Step 2.
 
-review-strategy only reads what the dispatch prompt names. It does not open experiment-tree.json to look for more.
+review-strategy reads only what the dispatch prompt names. It does not open experiment-tree.json to look for more.
 
 ### 2. Compute Parameter Efficiency
 
-Compute from the inline integers:
-- `param_ratio = variant_params / baseline_params`
-- `relative_metric_improvement = (variant_primary_metric - baseline_primary_metric) / baseline_primary_metric`
-- `efficiency = relative_metric_improvement / param_ratio`
-
-Read the efficiency and param_ratio thresholds from hypothesis.yaml's search_config section (or derive from baseline variance and parameter scale if not declared):
-
-| Efficiency | param_ratio | Verdict |
-|---|---|---|
-| Above the high efficiency threshold | any | Worth it |
-| Between the low and high efficiency thresholds | Below the param_ratio ceiling | Worth it |
-| Between the low and high efficiency thresholds | At or above the param_ratio ceiling | Diminishing returns |
-| Below the low efficiency threshold | any | Not worth it |
-
-Simplification special case: when the variant uses fewer parameters than the baseline and the primary metric does not degrade beyond the significance threshold, the complexity verdict is Worth it regardless of the computed efficiency.
+Read `references/efficiency-thresholds.md` for parameter efficiency computations, threshold sources, and complexity verdict rules. Compute param_ratio, relative_metric_improvement, and efficiency from the inline numbers. Apply the complexity verdict table from the reference doc.
 
 ### 3. Classify Change Type
 
-Compare this variant's ops_used and composition.strategy against its immediate parent in experiment_history:
-- **New class**: this variant's fingerprint (sorted ops + composition strategy) does not match any prior node's fingerprint. This is the class's inaugural attempt.
-- **Architecture refinement**: same class fingerprint as the parent, but ops_used, composition.strategy, or num_layers differs from the parent.
-- **Hyperparameter-only refinement**: same class fingerprint and same ops/composition as the parent — only hyperparameter values differ.
+Read `references/efficiency-thresholds.md` § Change Classification for fingerprint rules and change type conditions.
 
 ### 4. Check Pareto Dominance
 
-Compare (primary_metric, variant_params) against every point on the inline pareto_front:
-- **Dominant**: better on at least one objective and no worse on the other. Add to the front, remove the points it dominates.
-- **Dominated**: worse on at least one objective and no better on the other. Does not join the front.
-- **Neutral**: ties or trades off across objectives. Joins the front as non-dominated.
+Read `references/pareto-computation.md` for dominance rules, candidate status, and front update logic. Compare (primary_metric, variant_params) against every point on the inline pareto_front via an executed script.
 
 ### 5. Detect Stale Pathways
 
-Walk experiment_history backward from this variant within the same spec class, counting consecutive refinements where each yielded less than the declared diminishing_returns_threshold in relative primary-metric improvement over its own parent. When that count exceeds the declared stale_pathway_count, flag the pathway stale. A "New class" variant (Step 3) can never be stale — there is no prior refinement within the class to compare against.
+Read `references/efficiency-thresholds.md` § Stale Pathway Detection for counting rules and thresholds.
 
 ### 6. Apply Decision Matrix
 
-| Complexity | Stale | Pareto | Verdict |
-|---|---|---|---|
-| Worth it | Not stale | Dominant or Neutral | KEEP |
-| Worth it | Not stale | Dominated | KEEP_WITH_CONCERNS |
-| Worth it | Stale | Dominant | KEEP_WITH_CONCERNS |
-| Worth it | Stale | Neutral or Dominated | DISCARD |
-| Diminishing returns | Not stale | Dominant | KEEP_WITH_CONCERNS |
-| Diminishing returns | any | Neutral or Dominated | DISCARD |
-| Not worth it | any | any | DISCARD |
-
-**Exception — inaugural attempt in an UNTRIED class:** if `spec_class_status` was UNTRIED immediately before this variant (Step 3 classified it as "New class"), floor the verdict at KEEP_WITH_CONCERNS regardless of what the matrix above produces. A single data point cannot establish "not worth it" or "diminishing returns" — those require a trend across depth, which an inaugural attempt does not have. A variant evaluate already ACCEPTed does not get discarded here for being the first of its kind.
+Read `references/efficiency-thresholds.md` § Decision Matrix. Apply the matrix using the complexity, stale, and Pareto results from Steps 2-5. Read `references/efficiency-thresholds.md` § Untried-Class Floor for the inaugural attempt exception.
 
 ### 7. Write REVIEW.json
 
@@ -122,7 +99,7 @@ Write `<worktree-path>/REVIEW.json`: node identity, verdict, the complexity bloc
 
 - BEFORE computing param_ratio: "Am I using variant_params and baseline_params from the dispatch prompt, not estimating from the architecture?"
 - BEFORE checking Pareto dominance: "Am I using the inline pareto_front, not recomputing it from a tree I read myself?"
-- BEFORE flagging stale: "Did I count consecutive sub-diminishing_returns_threshold refinements from the inline experiment_history, not from a general impression?"
+- BEFORE flagging stale: "Did I count consecutive sub-diminishing_returns_threshold refinements per `references/efficiency-thresholds.md`, not from a general impression?"
 - BEFORE applying the decision matrix: "Are complexity, staleness, and Pareto status all computed via executed scripts?"
 - BEFORE discarding an UNTRIED-class variant: "Was spec_class_status UNTRIED before this variant, requiring a floor of KEEP_WITH_CONCERNS?"
 
@@ -130,11 +107,11 @@ Write `<worktree-path>/REVIEW.json`: node identity, verdict, the complexity bloc
 
 | You think... | Reality |
 |---|---|
-| "The metric improved so it's worth keeping" | Check efficiency against the declared thresholds. Raw improvement ignores the parameter cost. |
-| "This architecture looks complex, it is not worth it" | Use variant_params and baseline_params from the dispatch prompt. Visual complexity is not a parameter count. |
-| "One more refinement in this class will get us there" | Check consecutive sub-threshold refinements from experiment_history. Past the declared stale_pathway_count, mark the pathway stale by definition. |
-| "This is clearly Pareto-dominant" | Check dominance against the inline pareto_front with an executed comparison, not a glance at two numbers. |
-| "It's the first attempt in this class and the metric is unimpressive, discard it" | Set inaugural attempts to KEEP_WITH_CONCERNS at minimum. One data point cannot establish a trend the class has not had a chance to produce. |
+| "The metric improved so it's worth keeping" | Check efficiency against the declared thresholds per `references/efficiency-thresholds.md`. |
+| "This architecture looks complex, it is not worth it" | Read variant_params and baseline_params from the dispatch prompt. Verify complexity via the computed param_ratio, not visual impression. |
+| "One more refinement in this class will get us there" | Check consecutive sub-threshold refinements from experiment_history per `references/efficiency-thresholds.md` § Stale Pathway Detection. |
+| "This is clearly Pareto-dominant" | Run the dominance check against the inline pareto_front per `references/pareto-computation.md`. |
+| "It's the first attempt in this class and the metric is unimpressive, discard it" | Apply the KEEP_WITH_CONCERNS floor per `references/efficiency-thresholds.md` § Untried-Class Floor. One data point cannot establish a trend. |
 
 ## Red Flags
 
@@ -146,10 +123,10 @@ Write `<worktree-path>/REVIEW.json`: node identity, verdict, the complexity bloc
 
 ## Key Principles
 
-- Performance gain must be proportional to added parameter cost.
-- A stale pathway is more than the declared stale_pathway_count consecutive same-class refinements without meaningful improvement — a mechanical count, not a feeling.
-- Pareto dominance is computed from the inline front, never assessed visually.
-- An UNTRIED class's inaugural attempt cannot be judged against a trend it hasn't had the chance to establish.
+- Performance gain must be proportional to added parameter cost, per `references/efficiency-thresholds.md`.
+- A stale pathway exceeds the declared stale_pathway_count consecutive same-class refinements without meaningful improvement — a mechanical count, not a feeling.
+- Pareto dominance is computed per `references/pareto-computation.md`, never assessed visually.
+- An UNTRIED class's inaugural attempt cannot be judged against a trend it has not had the chance to establish.
 - review-strategy is the gate between a raw ACCEPT and the variant's place in the experiment tree.
 
 ## The Bottom Line

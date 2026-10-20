@@ -7,6 +7,13 @@ description: "Trigger /evidence-report when auto-discover needs to write the fin
 
 # Evidence Report
 
+## Contract
+
+- **Reads**: `.auto-discover/hypothesis.yaml`, `.auto-discover/hypothesis.sha256`, `.auto-discover/experiment-tree.json`, `<worktree-path>/EVALUATION.json`, `<worktree-path>/null_baseline_result.json`, `<worktree-path>/reproducibility_result.json`, `<worktree-path>/judge_verdict.json`, `.auto-discover/experiments/<hash>/gates/*.json`
+- **Writes**: `<worktree-path>/evidence.json` (schema: `references/evidence-schema.md`)
+- **References**: `references/evidence-schema.md`, `references/verdict-rules.md`
+- **Verdicts**: DISCOVERY_CONFIRMED, DISCOVERY_REFUTED, BLOCKED_DIVERGENCE, BLOCKED_NEEDS_USER
+
 <HARD-GATE>
 Do NOT declare DISCOVERY_CONFIRMED without all conditions met. STOP and verify converge returned CONVERGED, both gates PASSED, and JUDGE_CONFIRMS.
 </HARD-GATE>
@@ -84,53 +91,31 @@ Read `.auto-discover/hypothesis.yaml` and embed its full contents into `evidence
 
 ### 2. Collect Gate Results
 
-Isolation gate results live at `.auto-discover/experiments/<hash>/gates/`. Training results live at the worktree path. Both paths are in the dispatch context. Read isolation gate JSON from `.auto-discover/experiments/<hash>/gates/gradient_flow.json`, `gates/output_range.json`, `gates/toy_convergence.json`, using the experiment hash from the dispatch context — never from the worktree path. Read `null_baseline_result.json` and `reproducibility_result.json` from the worktree path. Record each as a pass/fail entry with its own reason string — do not collapse them into a single boolean without preserving which gate produced which result.
+Read `references/evidence-schema.md` § Field Sources. Populate each gate_results field from the source file named there. Isolation gates read from `.auto-discover/experiments/<hash>/gates/` (hash from the dispatch context, never from the worktree path). Null-baseline and reproducibility results read from the worktree path. Record each as a pass/fail entry with its own reason string — do not collapse them into a single boolean.
 
 ### 3. Collect Convergence Signals
 
-Record two distinct fields and do not conflate them. First, the search-level verdict: the leading candidate reached the end gates only because `converge` already returned `CONVERGED` on the fully-aggregated experiment tree — copy that status verbatim, do not re-derive it. Second, the candidate's own training-dynamics diagnostic: read `EVALUATION.json` from the leading candidate's worktree and record its `accuracy_trajectory` field (one of six values from evaluate: stable_high, stable_moderate, plateau_low_accuracy, spike_then_drop, budget_exhausted, diverged). This diagnostic is never omitted, but it is informational — it explains how the candidate trained. It does not gate DISCOVERY_CONFIRMED; only converge's search-level CONVERGED status does.
+Read `references/evidence-schema.md` § Field Sources for `search_convergence` and `accuracy_trajectory`. Copy converge's search-level CONVERGED status verbatim — do not re-derive it. Read `EVALUATION.json` from the leading candidate's worktree and record its `accuracy_trajectory` diagnostic. This diagnostic is never omitted, but it does not gate DISCOVERY_CONFIRMED; only converge's search-level status does.
 
 ### 4. Collect Judge Verdict
 
-Read `judge_verdict.json` and record the judge's status (`JUDGE_CONFIRMS` or `JUDGE_REFUTES`), the judge agent identifier, and the primary metric comparison the judge scored against.
+Read `references/evidence-schema.md` § Field Sources for `gate_results.judge`. Populate from `judge_verdict.json`, mapping JUDGE_CONFIRMS to CONFIRMS and JUDGE_REFUTES to REFUTES as the schema specifies.
 
 ### 5. Build Comparison Table
 
-From `null_baseline_result.json`, build a table with one row per comparison: shuffled-label, constant-output, pre-registered baseline. Each row carries the candidate value, the control/baseline value, and the pass/fail outcome.
+Read `references/evidence-schema.md` § Field Sources for `comparison_table`. Populate from `null_baseline_result.json` with one entry per pre-registered metric.
 
 ### 6. Build Seed Variance Table
 
-From `reproducibility_result.json`, copy the `variance_table` field directly — per-metric mean, std, tolerance, and within-tolerance boolean, across every declared seed.
+Read `references/evidence-schema.md` § Field Sources for `seed_variance_table`. Populate from `reproducibility_result.json` with raw per-seed values for every pre-registered metric.
 
 ### 7. Apply Terminal Verdict Rules
 
-Apply these rules in order, mechanically:
-
-- **DISCOVERY_CONFIRMED**: converge returned CONVERGED, AND null-baseline-gate PASSED, AND reproducibility-gate PASSED, AND judge status is JUDGE_CONFIRMS. All conditions required — none is sufficient alone. The candidate's accuracy_trajectory diagnostic is recorded but is not itself a condition.
-- **BLOCKED_DIVERGENCE**: converge itself returned BLOCKED because the experiment tree was unassessable, or the search made a full pass through every UNTRIED spec class without producing a single ACCEPT anywhere in the tree. This overrides all other checks — a structurally failing search produces no other verdict.
-- **DISCOVERY_REFUTED**: converge returned CONVERGED, but null-baseline-gate FAILED, or reproducibility-gate FAILED, or judge status is JUDGE_REFUTES. Name the specific failing gate(s) in the evidence.
-- **BLOCKED_NEEDS_USER**: pre-register or establish-baseline returned BLOCKED_NEEDS_USER, explore returned BLOCKED with no viable thesis, or every spec in a round failed isolate-component three consecutive times.
+Read `references/verdict-rules.md`. Apply the terminal verdict table and evaluation order mechanically. BLOCKED_DIVERGENCE is checked first (converge BLOCKED or full pass without any ACCEPT), then BLOCKED_NEEDS_USER (upstream pipeline failures), then DISCOVERY_CONFIRMED (all gates pass), then DISCOVERY_REFUTED (any end gate failed). Name the specific failing gate(s) in the evidence.
 
 ### 8. Write Evidence JSON
 
-Write `evidence.json` to the worktree path: `<worktree-path>/evidence.json`. This is the same worktree path the dispatch context and every training-result read in Step 2 already use — evidence.json lives alongside training_metrics.json, final_metrics.json, and REVIEW.json, not under `.auto-discover/experiments/<hash>/`.
-
-```json
-{
-  "hypothesis": { "...verbatim contents of hypothesis.yaml..." },
-  "hypothesis_sha256": "<hash>",
-  "search_convergence": "<CONVERGED|BLOCKED, from converge>",
-  "gate_results": {
-    "isolation": {"gradient_flow": "PASS", "output_range": "PASS", "toy_convergence": "PASS"},
-    "null_baseline": {"status": "NULL_BASELINE_PASSED", "comparison_table": [...]},
-    "reproducibility": {"status": "REPRODUCIBILITY_PASSED", "variance_table": [...]}
-  },
-  "accuracy_trajectory": "<diagnostic from EVALUATION.json: stable_high|stable_moderate|plateau_low_accuracy|spike_then_drop|budget_exhausted|diverged>",
-  "judge_verdict": {"status": "<JUDGE_CONFIRMS|JUDGE_REFUTES>", "judge_agent_id": "<id>"},
-  "terminal_verdict": "<DISCOVERY_CONFIRMED|DISCOVERY_REFUTED|BLOCKED_DIVERGENCE|BLOCKED_NEEDS_USER>",
-  "reason": "<one-line explanation naming the deciding factor>"
-}
-```
+Read `references/evidence-schema.md` for the full schema and field sources. Write `evidence.json` to `<worktree-path>/evidence.json` — alongside training_metrics.json, final_metrics.json, and REVIEW.json, not under `.auto-discover/experiments/<hash>/`. Read `references/evidence-schema.md` § Population Rules for which fields are populated under each terminal verdict (BLOCKED verdicts carry null for fields with no upstream source file).
 
 ### 9. Emit Terminal Verdict
 
@@ -151,7 +136,7 @@ Return exactly one of the four terminal verdicts, matching `terminal_verdict` in
 | "Everything looked good, I'll summarize it in prose" | Write structured JSON. Prose summaries are not machine-readable and invite paraphrase drift. |
 | "The hypothesis is long, I'll condense the key points" | Read the hypothesis and write it verbatim into evidence.json. Condensing is where fields silently vanish. |
 | "Judge confirmed and most gates passed, that's basically confirmed" | Verify ALL gates PASS, not most. One FAIL routes to DISCOVERY_REFUTED regardless of the judge's verdict. |
-| "Convergence was fine, no need to record the exact type" | Include the accuracy_trajectory diagnostic for the audit trail. DISCOVERY_CONFIRMED depends on converge's CONVERGED status, not on this diagnostic. |
+| "Convergence was fine, no need to record the exact type" | Keep the accuracy_trajectory diagnostic in the audit trail. DISCOVERY_CONFIRMED depends on converge's CONVERGED status, not on this diagnostic. |
 | "This is clearly a discovery, I don't need to check every gate individually" | Apply the terminal verdict rules mechanically. Confidence is not a substitute for checking the gate list. |
 
 ## Red Flags

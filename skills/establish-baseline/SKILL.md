@@ -7,6 +7,13 @@ description: "Trigger /establish-baseline when auto-discover needs a null-hypoth
 
 # Establish Baseline
 
+## Contract
+
+- **Reads**: `.auto-discover/hypothesis.yaml`, `.auto-discover/hypothesis.sha256`
+- **Writes**: `.auto-discover/baselines/baseline_metrics.json`, `.auto-discover/baselines/derivation.json`
+- **References**: `references/baseline-conventions.md`
+- **Verdicts**: BASELINE_LOCKED, BLOCKED_NEEDS_USER
+
 <HARD-GATE>
 Do NOT establish a baseline without a locked hypothesis. STOP if the SHA-256 does not round-trip.
 </HARD-GATE>
@@ -16,7 +23,7 @@ Do NOT proceed without matching the declared training budget. STOP and verify ex
 </HARD-GATE>
 
 <HARD-GATE>
-Do NOT overwrite an existing baseline. STOP and re-register the hypothesis if the baseline needs to change.
+Do NOT write baseline_metrics.json if the file already exists. STOP and re-register the hypothesis if the baseline needs to change.
 </HARD-GATE>
 
 <HARD-GATE>
@@ -83,12 +90,7 @@ Read the `null_hypothesis` field from the locked hypothesis. This declares the c
 
 ### 3. Derive Training Hyperparameters
 
-Before composing any training code, trace each hyperparameter to a measurable property of the data or the architecture — never to what a paper or benchmark uses for this task domain:
-
-- Learning rate: probe the gradient scale on a single micro-batch of the actual training data, then set the learning rate so a single update moves each parameter by 1% of that parameter's current magnitude.
-- Regularization strength: compute the ratio of trainable parameters to training examples. A higher ratio demands stronger regularization; a lower ratio tolerates weaker or none.
-- Optimizer: default to Adam unless a loss-landscape probe (gradient variance measured across several micro-batches) shows a different optimizer is warranted.
-- Compute budget: take the hypothesis-declared compute bound directly and convert it to a step count using this architecture's measured per-step cost.
+Read `references/baseline-conventions.md` § Hyperparameter Derivation for the per-hyperparameter derivation rules, input measurements, and anti-retrieval criteria. Trace each hyperparameter to a measurable property of the data or the architecture — never to what a paper or benchmark uses for this task domain. Derive learning rate, regularization strength, optimizer, and compute budget per the reference doc's derivation rules.
 
 A hyperparameter that traces back to "what this task's literature uses" is retrieval, not derivation, regardless of whether the resulting number happens to match.
 
@@ -106,7 +108,7 @@ Compute every metric named in `pre_registered_metrics.primary` and `pre_register
 
 ### 7. Write Baseline Record
 
-Write `.auto-discover/baselines/baseline_metrics.json` containing the metric values, the training budget used, and the null_hypothesis description. If this file already exists, STOP — do not overwrite it. A baseline that needs to change means the hypothesis needs to be re-registered, not that the existing baseline gets silently replaced.
+Read `references/baseline-conventions.md` § Outputs for the baseline_metrics.json schema. Write `.auto-discover/baselines/baseline_metrics.json` containing the metric values, the training budget used, and the null_hypothesis description. If this file already exists, STOP — do not overwrite it. A baseline that needs to change means the hypothesis needs to be re-registered, not that the existing baseline gets silently replaced.
 
 ### 8. Write Derivation Record
 
@@ -129,7 +131,7 @@ Emit BASELINE_LOCKED with the metrics recorded, or BLOCKED_NEEDS_USER with the r
 | You think... | Reality |
 |---|---|
 | "The baseline obviously underperforms, I can estimate it" | Run the baseline training on real data. An estimated number is chosen to flatter the candidate. |
-| "A few more epochs will make the baseline more fair" | Use the training_budget exactly as declared — extending it breaks budget parity with the candidate. |
+| "A few more epochs will make the baseline more fair" | Apply the training_budget exactly as declared — extending it breaks budget parity with the candidate. |
 | "I'll just update the existing baseline_metrics.json" | Write the baseline once and never overwrite. A changed baseline invalidates every prior comparison. |
 | "I only need the primary metric right now" | Write every pre-registered metric now. The judge and evidence-report need the full set later. |
 | "Weight decay 1.0 is standard for this task" | Run a parameter-to-sample ratio check and set regularization from the result. If the ratio demands 1.0, that is a derivation. If 1.0 was imported from a paper, that is retrieval. |

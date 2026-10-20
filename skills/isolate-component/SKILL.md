@@ -7,6 +7,13 @@ description: "Trigger /isolate-component when auto-discover needs to validate a 
 
 # Isolate Component
 
+## Contract
+
+- **Reads**: `genome_spec.json` from the experiment directory (schema: `propose-spec/references/genome-spec-schema.md`)
+- **Writes**: `.auto-discover/experiments/<hash>/gates/gradient_flow.json`, `.auto-discover/experiments/<hash>/gates/output_range.json`, `.auto-discover/experiments/<hash>/gates/toy_convergence.json`
+- **References**: `references/isolation-gates.md`, `references/threshold-calibration.md`
+- **Verdicts**: COMPONENT_VALIDATED, BLOCKED_NEEDS_USER
+
 <HARD-GATE>
 Do NOT compose a full architecture without passing all three isolation gates. STOP and run each gate.
 </HARD-GATE>
@@ -66,14 +73,14 @@ digraph isolate_component {
 
 ## Checklist
 
-1. Read genome_spec.json for the component under test
-2. Run Gate 1: Gradient Flow — instantiate, forward + backward on random input, check gradient norms
-3. Run Gate 2: Output Range — forward on random input, check bounds and finiteness
-4. Run Gate 3: Toy Convergence — train on a minimal synthetic task for a fixed micro-budget, check loss decrease
-5. Write each gate's JSON verdict to the experiment directory
-6. On any FAIL, mutate the genome spec and re-invoke propose-spec
-7. After the declared max_isolation_retries consecutive failures on the same component type, emit BLOCKED_NEEDS_USER
-8. On all-PASS, emit COMPONENT_VALIDATED
+1. Read genome_spec.json for the component under test.
+2. Run Gate 1: Gradient Flow per `references/isolation-gates.md`.
+3. Run Gate 2: Output Range per `references/isolation-gates.md`.
+4. Run Gate 3: Toy Convergence per `references/isolation-gates.md`.
+5. Write each gate's JSON verdict to the experiment directory.
+6. On any FAIL, mutate the genome spec per `references/isolation-gates.md` § Failure Handling and re-invoke propose-spec.
+7. After the declared max_isolation_retries consecutive failures on the same component type, emit BLOCKED_NEEDS_USER.
+8. On all-PASS, emit COMPONENT_VALIDATED.
 
 ## Step Details
 
@@ -83,27 +90,27 @@ Read `genome_spec.json` from the experiment directory produced by propose-spec. 
 
 ### 2. Gate 1: Gradient Flow
 
-Instantiate the novel component with the hyperparameters from the spec. Run a forward pass on random input matching the declared input shape, then backpropagate from a scalar loss. Compute the gradient norm at every parameter tensor. PASS if the max gradient norm is below the declared threshold AND the mean gradient norm is below one-tenth of that threshold. A gradient that vanishes or explodes here will do the same — worse, less diagnosably — once other components are stacked around it.
+Read `references/isolation-gates.md` for the gradient flow gate procedure and PASS/FAIL conditions. Read `references/threshold-calibration.md` for the `max_norm` threshold. Instantiate the novel component with the hyperparameters from the spec. Execute the gate and write `gradient_flow.json`.
 
 ### 3. Gate 2: Output Range
 
-Forward the component on random input again. Check that every output value falls within the declared isolation_output_range, contains no NaN, and contains no Inf. PASS only if all three conditions hold across the full output tensor, not just a sampled subset.
+Read `references/isolation-gates.md` for the output range gate procedure and PASS/FAIL conditions. Read `references/threshold-calibration.md` for output bounds. Forward the component on random input. Execute the gate and write `output_range.json`.
 
 ### 4. Gate 3: Toy Convergence
 
-Train the component on a minimal, structured synthetic task — one small enough that a working component shows measurable progress within a micro-budget scaled to the component's parameter count. Record the loss at step 0 and at the final step. PASS if `final_loss / initial_loss` is below the declared isolation_convergence_threshold, i.e. the loss dropped by at least the corresponding percentage. A component that cannot make progress on a toy task in isolation will not somehow start learning once folded into a larger architecture.
+Read `references/isolation-gates.md` for the toy convergence gate procedure and PASS/FAIL conditions. Read `references/threshold-calibration.md` for `loss_ratio_threshold` and `max_steps`. Execute the gate and write `toy_convergence.json`.
 
 ### 5. Write Gate JSON Files
 
-Each gate writes its own JSON file to `.auto-discover/experiments/<hash>/gates/`: `gradient_flow.json`, `output_range.json`, `toy_convergence.json`. Each file records the verdict (`PASS` or `FAIL`), the measured values, and the thresholds compared against — the raw numbers, not just the verdict string, so a later audit can re-derive the decision.
+Read `references/isolation-gates.md` for the output format. Each gate writes its own JSON file to `.auto-discover/experiments/<hash>/gates/` recording the verdict, the measured values, and the thresholds compared against.
 
 ### 6. On Failure, Mutate and Re-Propose
 
-If any gate returns FAIL, do not retry the same spec. Invoke propose-spec again with the failure mode fed back as a constraint mutation — e.g. a gradient explosion narrows the relevant hyperparameter range; an output-range failure reveals a different normalization op from `allowed_ops`. The re-proposal is a fresh SPEC_EMITTED cycle, not a patch to the failed spec.
+Read `references/isolation-gates.md` § Failure Handling for mutation rules per failure mode. Invoke propose-spec with the failed gate's mode as a constraint mutation. The re-proposal is a fresh SPEC_EMITTED cycle, not a patch to the failed spec.
 
 ### 7. Track Consecutive Failures
 
-Maintain a consecutive-failure counter scoped to the current component type (the `novel_component.type` field). A PASS on any gate does not reset this counter until all three gates PASS together. When the consecutive failure count reaches the declared max_isolation_retries, STOP mutating and emit BLOCKED_NEEDS_USER — indefinite mutation without user input is how a search silently burns budget on a component class that cannot pass.
+Maintain a consecutive-failure counter scoped to the current component type (the `novel_component.type` field). A PASS on any gate does not reset this counter until all three gates PASS together. When the consecutive failure count reaches the declared max_isolation_retries, emit BLOCKED_NEEDS_USER.
 
 ### 8. Emit Verdict
 
@@ -113,20 +120,20 @@ Emit COMPONENT_VALIDATED only when all three gate JSON files exist and all three
 
 - BEFORE Gate 1: "Is the component instantiated alone, with no other architecture component present?"
 - BEFORE Gate 2: "Is the check applied to the full output tensor, not a sample?"
-- BEFORE Gate 3: "Is the toy task genuinely minimal and structured, not a stand-in for the real dataset?"
+- BEFORE Gate 3: "Is the toy task minimal and structured, not a stand-in for the real dataset?"
 - BEFORE re-invoking propose-spec: "Does the mutation address the specific gate that failed, not a generic re-roll?"
 - BEFORE emitting COMPONENT_VALIDATED: "Do all three gate JSON files exist with verdict PASS?"
-- BEFORE emitting BLOCKED_NEEDS_USER: "Has the consecutive-failure counter actually reached the declared max_isolation_retries for this component type?"
+- BEFORE emitting BLOCKED_NEEDS_USER: "Has the consecutive-failure counter reached the declared max_isolation_retries for this component type?"
 
 ## Rationalization Table
 
 | You think... | Reality |
 |---|---|
-| "The gradients looked fine in the full training run" | Run the component alone. That run already had other components shaping the gradient. |
-| "The output range check is redundant with the loss not being NaN" | A bounded loss can still hide unbounded intermediate activations. Check the component's own outputs directly. |
-| "The declared micro-budget isn't enough to judge convergence" | Run the toy task. A working component shows measurable progress fast — if it does not, scale will not fix it. |
-| "I can retry the same spec, maybe it was a fluke" | Mutate the constraints and re-invoke propose-spec. Use a fresh spec, not a retry, to advance the search. |
-| "Almost at the failure limit, but keep going" | The threshold is exactly the declared max_isolation_retries consecutive failures. STOP and emit BLOCKED_NEEDS_USER at that count, not before or after. |
+| "The gradients looked fine in the full training run" | Run the component alone per `references/isolation-gates.md`. That run already had other components shaping the gradient. |
+| "The output range check is redundant with the loss not being NaN" | Check the component's own outputs directly per `references/isolation-gates.md`. A bounded loss can hide unbounded intermediate activations. |
+| "The declared micro-budget isn't enough to judge convergence" | Run the toy task per `references/isolation-gates.md`. A working component shows measurable progress fast. |
+| "I can retry the same spec, maybe it was a fluke" | Dispatch propose-spec with mutated constraints per `references/isolation-gates.md` § Failure Handling. Require a fresh spec, not a retry. |
+| "Almost at the failure limit, but keep going" | Halt at exactly the declared max_isolation_retries consecutive failures. Emit BLOCKED_NEEDS_USER at that count. |
 
 ## Red Flags
 
@@ -140,8 +147,9 @@ Emit COMPONENT_VALIDATED only when all three gate JSON files exist and all three
 
 - Every gate runs on the component in isolation, never inside a composed architecture.
 - Every gate verdict comes from an executed script producing JSON, never from visual inspection.
+- Gate definitions, thresholds, and failure handling rules live in `references/isolation-gates.md` and `references/threshold-calibration.md`.
 - Failure triggers mutation and re-proposal, not a retry of the identical spec.
-- Reaching the declared max_isolation_retries consecutive failures on the same component type STOPs the loop and asks the user.
+- Reaching the declared max_isolation_retries consecutive failures on the same component type stops the loop and asks the user.
 - COMPONENT_VALIDATED requires all three gates, not a majority.
 
 ## The Bottom Line

@@ -1,5 +1,20 @@
 {
-  "category": "ml-experimentation",
-  "tags": ["ml", "architecture-discovery", "experiment-orchestration", "hypothesis-testing"],
-  "author": "anton.100chepaldin@gmail.com"
+  "name": "auto-discover",
+  "owner": {
+    "name": "hook12aaa",
+    "email": "anton.100chepaldin@gmail.com"
+  },
+  "metadata": {
+    "description": "Orchestrator for autonomous ML architectural discovery via evolutionary search",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "auto-discover",
+      "source": "./",
+      "description": "Evolutionary ML architecture discovery. Analyzes problem structure, evolves genome specs from structural signals, validates components in isolation, and judges candidates against null baselines across seeds.",
+      "category": "ml-experimentation",
+      "tags": ["ml", "architecture-discovery", "experiment-orchestration", "hypothesis-testing"]
+    }
+  ]
 }

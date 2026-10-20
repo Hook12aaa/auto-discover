@@ -7,6 +7,13 @@ description: "Trigger /converge whenever auto-discover needs a search-level conv
 
 # Converge
 
+## Contract
+
+- **Reads**: `.auto-discover/experiment-tree.json` (schema: `auto-discover/references/experiment-tree-schema.md`), `.auto-discover/problem-analysis.json`
+- **Writes**: `class_status` and `search_status` fields of `.auto-discover/experiment-tree.json`
+- **References**: `references/convergence-conditions.md`
+- **Verdicts**: EXPLORING, CONVERGED, BLOCKED
+
 <HARD-GATE>
 Do NOT declare CONVERGED without all three required Tier 2 conditions passing via executed scripts. STOP and return EXPLORING.
 </HARD-GATE>
@@ -73,22 +80,15 @@ For each spec in the tree, extract the sorted set of ops used and the compositio
 
 ### 3. Tier 1 — Within-Class Exhaustion
 
-For each spec class present in the tree, check the three conditions in order. Any one firing settles the class:
-- **Diminishing returns**: less than the declared diminishing_returns_threshold in relative improvement over recent rounds within the class AND the class has reached depth >= the declared min_exhaustion_depth.
-- **Depth ceiling**: the class has been refined to depth >= the declared min_exhaustion_depth with no remaining untried variants at shallower depths.
-- **Pareto domination**: another class strictly dominates this one on both the primary metric and parameter count AND this class's depth >= 1.
+Read `references/convergence-conditions.md` § Tier 1 — Within-Class Exhaustion. For each spec class present in the tree, check the three conditions in the table. Any one firing settles the class as EXHAUSTED.
 
-A class that hit any condition is EXHAUSTED. A class with active nodes that has hit none of the three remains EXPLORING. A class named in genome_constraints' allowed_ops space but with zero nodes in the tree remains UNTRIED.
+Read `references/convergence-conditions.md` § Class Status Assignment for the full status mapping: EXHAUSTED (any Tier 1 condition fired), EXPLORING (has nodes, no condition fired), UNTRIED (implied by research directions, zero nodes in the tree).
 
 ### 4. Tier 2 — Cross-Class Coverage
 
-Three conditions are REQUIRED and must hold simultaneously for the global status to become CONVERGED:
-- **Minimum class count**: the number of explored classes (EXHAUSTED or EXPLORING) meets or exceeds the hypothesis-declared minimum, or — if the hypothesis declares none — a default derived from the reachable class space.
-- **All classes settled**: no class has status EXPLORING. Every class that has been attempted is EXHAUSTED, and every class that has not been attempted is UNTRIED — and per the second HARD-GATE, UNTRIED classes block CONVERGED just as EXPLORING ones do, until explore has given each one at least one attempt.
-- **Pareto front stability**: the front recorded in pareto_history has been identical for the last search_config.pareto_stability_window consecutive iterations.
+Read `references/convergence-conditions.md` § Tier 2 — Cross-Class Coverage. All three conditions (minimum class count, all classes settled, Pareto front stability) are REQUIRED and must hold simultaneously for the global status to become CONVERGED. Per the second HARD-GATE, UNTRIED classes block CONVERGED exactly like EXPLORING ones, until explore has given each one at least one attempt.
 
-Front diversity is RECORDED, not required:
-- **Front diversity (diagnostic)**: count the distinct spec classes represented in the current pareto_front. Record the count alongside the verdict. When the count falls below the declared min_front_diversity, record the diagnostic; when the count is exactly one, record it specifically as `front_diversity: "single_class_dominance"`. This never blocks CONVERGED. Once the three required conditions above hold — every class settled, every settled class EXHAUSTED, the front stable for the declared window — a front concentrated in one class means that class structurally dominates every other reachable class, not that the search stopped short. Downstream consumers (review-strategy, evidence-report) read this diagnostic to understand why the front looks the way it does; it does not change their own gating logic.
+Read `references/convergence-conditions.md` § Front Diversity Diagnostic. Record the front diversity count alongside the verdict. When the count falls below the declared min_front_diversity, record the diagnostic; when the count is exactly one, record it as `front_diversity: "single_class_dominance"`. This diagnostic never blocks CONVERGED — once all three required conditions hold, a single-class front means that class dominates every other reachable class.
 
 ### 5. Emit the Verdict
 
@@ -108,11 +108,11 @@ Front diversity is RECORDED, not required:
 
 | You think... | Reality |
 |---|---|
-| "The best candidate's metrics look great, we're done" | One candidate's quality is not a Tier 2 condition. Check minimum class count, settlement, and front stability — all three required conditions. |
+| "The best candidate's metrics look great, we're done" | Check minimum class count, settlement, and front stability — all three required Tier 2 conditions per `references/convergence-conditions.md`. |
 | "We've tried enough classes at this point" | Check the explored count against the declared minimum or the default derived from the reachable class space. "Enough" is a number, not a feeling. |
 | "The front hasn't changed in a while" | Check pareto_history for exactly the declared pareto_stability_window identical consecutive snapshots. "A while" is not the declared window until it's counted. |
 | "All the classes we tried are exhausted, so we're converged" | Run every UNTRIED class before declaring settlement. UNTRIED classes block convergence exactly like EXPLORING ones. |
-| "The front has only one class, that can't be converged" | When all classes are EXHAUSTED and the front is stable, single-class dominance is a result, not a failure. Record it and emit CONVERGED. |
+| "The front has only one class, that can't be converged" | Check whether all three required Tier 2 conditions hold. When they do, record single-class dominance as a diagnostic and emit CONVERGED — it is a result of the search, not a failure. |
 | "The loss curves all look grokked, this feels converged" | Read the search space, never a loss curve. Training-run signals belong to evaluate, not converge. |
 
 ## Red Flags

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **auto-discover** is a Claude Code plugin for evolutionary ML architectural discovery. It ships as pure Markdown/YAML skills with no shipped code -- Claude Code composes and executes every verification script in-context, at runtime, in the language the experiment already uses.
 
-Instead of training one genome spec through a linear pipeline, v2 evolves a population of candidates across an experiment tree. Research subagents run Polya's four-step method (understand, plan, carry out, look back) under anti-consensus HARD-GATEs, forcing every genome spec to trace back to a problem reframing instead of a pattern retrieved from training data. Convergence is judged at the level of the search space -- has this architecture family been exhausted, has that one been tried at all -- not at the level of a single training run's loss curve. Only the search's single leading candidate, chosen after convergence, submits to the null-baseline, reproducibility, and judge gates.
+Instead of training one genome spec through a linear pipeline, v2 evolves a population of candidates across an experiment tree. A problem analysis phase identifies what the task's mathematical structure requires — symmetries, invariances, information bounds, baseline failure modes — and produces structured research directions. Investigation agents then turn those structural signals into concrete genome specs, each traceable to a checked property of the problem. Convergence is judged at the level of the search space -- has this architecture family been exhausted, has that one been tried at all -- not at the level of a single training run's loss curve. Only the search's single leading candidate, chosen after convergence, submits to the null-baseline, reproducibility, and judge gates.
 
 ## Quick Start
 
@@ -17,9 +17,9 @@ Instead of training one genome spec through a linear pipeline, v2 evolves a popu
 Single entry point. Write a `hypothesis.yaml` declaring the thesis, null hypothesis, success/failure criteria, pre-registered metrics, seeds, training budget, and genome constraints. The orchestrator drives the evolutionary loop:
 
 ```
-pre-register -> establish-baseline -> initialize experiment tree
+pre-register -> establish-baseline -> analyze-problem -> initialize experiment tree
 -> LOOP {
-    explore (Polya-method research subagents) -> propose-spec (per thesis)
+    explore (investigation agents per structural direction) -> propose-spec (per proposal)
     -> isolate-component (per spec) -> build-variant (parallel worktrees)
     -> evaluate (per variant) -> review-strategy (Pareto front, efficiency)
     -> converge (two-tier search-level check)
@@ -41,11 +41,22 @@ The plugin ships Markdown only. There is no `scripts/` directory, no Python engi
 
 ## Plugin Structure
 
-- `skills/` -- SKILL.md files that Claude loads and follows, one per pipeline stage (15 total)
+- `skills/` -- SKILL.md contract files plus colocated `references/` directories with domain knowledge (decision tables, catalogs, schemas)
 - `commands/` -- `/auto-discover` slash command stub
 - `hooks/` -- SessionStart bootstrap that injects `using-auto-discover`
 - `bin/` -- shell checks that verify skill anatomy and verdict vocabulary
 - `.claude-plugin/` -- plugin manifest
+
+## Adding a New Domain
+
+Adding a new problem domain (e.g., time-series, vision) requires reference doc sections, not skill rewrites:
+
+1. Add a row to `skills/analyze-problem/references/domain-detection.md`
+2. Add a section to `skills/analyze-problem/references/analysis-catalog.md`
+3. Add a section to `skills/explore/references/component-vocabulary.md`
+4. Add a section to `skills/build-variant/references/training-conventions.md`
+5. Add a section to `skills/isolate-component/references/threshold-calibration.md`
+6. Add a section to `skills/establish-baseline/references/baseline-conventions.md`
 
 ## Key Concepts
 
@@ -53,9 +64,9 @@ The plugin ships Markdown only. There is no `scripts/` directory, no Python engi
 
 `pre-register` locks the hypothesis's thesis, null hypothesis, criteria, metrics, seeds, and budget behind a SHA-256 hash before any experiment runs. Nothing downstream can add a metric, loosen a threshold, or fill in a missing field after the fact.
 
-### A system that retrieves its answer cannot discover it
+### Analyze, then assemble
 
-Every genome spec traces through `explore`'s Polya-method research subagents -- restate the problem in two different ways, identify an analogy from a related problem, carry out the plan as a concrete spec, look back at whether the result generalizes -- each subagent working a distinct analogy domain. HARD-GATEs forbid proposing a spec derived from a named architecture pattern in training data, and forbid more than 50% ops overlap with any prior spec. The search runs as a population across the experiment tree, not one linear attempt.
+The `analyze-problem` skill runs 7 structural checks on the task — decomposition, algebraic structure, symmetries, information requirements, compositional structure, baseline failure analysis, and theoretical constraints — and produces structured research directions. Each direction connects a checked observation to an architectural implication. `explore` reads these directions and spawns investigation agents that turn structural signals into concrete proposals. Every genome spec traces to a specific research direction, which traces to a specific structural property that was verified. The search runs as a population across the experiment tree, not one linear attempt.
 
 ### Convergence is search-level, not training-run-level
 
@@ -77,8 +88,9 @@ Every architecture, however novel its framing, submits to the same mechanical is
 | `auto-discover` | Orchestrator -- manages the experiment tree, runs the evolutionary loop, dispatches the end gates |
 | `pre-register` | Validates the hypothesis YAML, computes and locks its SHA-256 |
 | `establish-baseline` | Trains the declared null hypothesis, stores an immutable baseline |
-| `explore` | Spawns Polya-method research subagents, enforces anti-consensus divergence, dispatches `propose-spec` per thesis |
-| `propose-spec` | Translates one research thesis into a typed genome spec within declared constraints |
+| `analyze-problem` | Structural analysis of the task — symmetries, invariances, information requirements, baseline failure mode. Produces research directions |
+| `explore` | Reads problem analysis signals, spawns investigation agents per structural direction, enforces divergence |
+| `propose-spec` | Translates one research proposal into a typed genome spec within declared constraints |
 | `isolate-component` | Runs 3 isolation gates on a novel component before composition |
 | `build-variant` | Builds and trains one genome spec in an isolated worktree |
 | `evaluate` | Scores one trained candidate against pre-registered metrics; convergence type is a diagnostic, not the verdict |
@@ -94,7 +106,7 @@ Every architecture, however novel its framing, submits to the same mechanical is
 - **Execute, don't eyeball** -- every spec-class exhaustion check, null comparison, and variance calculation is a composed script, never a read-the-numbers judgment call
 - **Structural distrust** -- no agent both produces and approves its own work
 - **Pre-registration is immutable** -- the hypothesis, its metrics, and its thresholds are locked before any experiment runs
-- **A system that retrieves its answer cannot discover it** -- Polya's method forces every spec to derive from a problem reframing, never a retrieved pattern
+- **Analyze, then assemble** -- structural analysis identifies what the task requires; explore assembles from those signals, not from recalled patterns
 - **Convergence is search-level, not training-run-level** -- a candidate's own training dynamics are a diagnostic, never the convergence signal
 - **Composed, not shipped** -- the plugin ships Markdown only; every verification script is written and run in-context
 

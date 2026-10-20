@@ -7,6 +7,13 @@ description: "Trigger /null-baseline-gate when auto-discover needs to compare th
 
 # Null Baseline Gate
 
+## Contract
+
+- **Reads**: `<worktree-path>/training_metrics.json`, `.auto-discover/baselines/baseline_metrics.json`, `.auto-discover/hypothesis.yaml`
+- **Writes**: `<worktree-path>/null_baseline_result.json` (schema: `references/null-comparisons.md` § Result Fields)
+- **References**: `references/null-comparisons.md`
+- **Verdicts**: NULL_BASELINE_PASSED, NULL_BASELINE_FAILED
+
 <HARD-GATE>
 Do NOT compare on metrics outside pre_registered_metrics. STOP and use only the pre-registered set.
 </HARD-GATE>
@@ -77,30 +84,19 @@ Read `pre_registered_metrics` from the locked `hypothesis.yaml`. Every compariso
 
 ### 3. Comparison 1: Shuffled-Label Control
 
-Compose a script that trains the same candidate architecture on the same data with labels randomly permuted, using the identical budget and hyperparameters as the candidate. This control cannot learn anything real — any accuracy above chance is memorization of quirks in the shuffle, not signal. PASS if the candidate's primary pre-registered metric exceeds the shuffled-label control's by a non-trivial margin (the margin declared in the hypothesis, or if undeclared, any statistically meaningful separation computed by the script — never eyeballed). If the candidate does not clearly beat this control, it is exploiting structure in the labels rather than learning the task.
+Read `references/null-comparisons.md` § Comparisons for the shuffled-label control definition and PASS condition. Compose a script that trains the same candidate architecture on the same data with labels randomly permuted, using the identical budget and hyperparameters as the candidate. PASS if the candidate's primary pre-registered metric exceeds the shuffled-label control's by the margin specified in the reference doc.
 
 ### 4. Comparison 2: Constant-Output Predictor
 
-Compose a script that scores a trivial predictor emitting the most-common class (classification) or the training-set mean (regression) against the pre-registered metrics. PASS if the candidate exceeds this predictor on the primary metric. A candidate that cannot beat a constant output is not learning.
+Read `references/null-comparisons.md` § Comparisons for the constant-predictor definition and PASS condition. Compose a script that scores the trivial predictor against the pre-registered metrics. PASS if the candidate exceeds this predictor on the primary metric.
 
 ### 5. Comparison 3: Pre-Registered Baseline
 
-Compose a script that loads the immutable baseline record written by `establish-baseline` and compares it against the candidate's final metrics, using only `pre_registered_metrics` and the `null_hypothesis` architecture (e.g., StandardTransformer) declared at pre-registration. PASS if the candidate outperforms the baseline on the primary metric by at least the declared success threshold. This is the actual comparison the hypothesis exists to test.
+Read `references/null-comparisons.md` § Comparisons for the baseline comparison definition and PASS condition. Compose a script that loads the immutable baseline record written by `establish-baseline` and compares it against the candidate's final metrics, using only `pre_registered_metrics`. PASS if the candidate outperforms the baseline on the primary metric by at least the declared success threshold.
 
 ### 6. Write Result
 
-Write `null_baseline_result.json` to the experiment directory:
-
-```json
-{
-  "status": "<NULL_BASELINE_PASSED|NULL_BASELINE_FAILED>",
-  "shuffled_label_comparison": {"passed": <bool>, "candidate_value": <float>, "control_value": <float>},
-  "constant_output_comparison": {"passed": <bool>, "candidate_value": <float>, "control_value": <float>},
-  "baseline_comparison": {"passed": <bool>, "candidate_value": <float>, "baseline_value": <float>, "threshold": <float>},
-  "budget_parity_verified": <bool>,
-  "reason": "<one-line explanation, naming which comparison(s) failed if any>"
-}
-```
+Read `references/null-comparisons.md` § Result Fields for the output schema. Write `null_baseline_result.json` to the experiment directory with every field from the schema populated.
 
 ### 7. Emit Verdict
 
@@ -121,7 +117,7 @@ Emit `NULL_BASELINE_PASSED` only if all three comparisons passed. Otherwise emit
 | "It beat the baseline, that's the real test, skip the rest" | Run all three. Beating the baseline alone does not rule out memorization or leakage. |
 | "The shuffled-label check is obviously going to pass" | Run the script. Obvious outcomes are exactly where unexamined leaks hide. |
 | "The candidate trained a few extra epochs, close enough" | Verify exact budget parity. Re-run with matched budget before comparing. |
-| "This other metric shows a bigger win, use that instead" | Use only pre_registered_metrics. Substituting a flattering metric after the fact is post-hoc metric selection. |
+| "This other metric shows a bigger win, use that instead" | Reject any metric outside pre_registered_metrics. Read `references/null-comparisons.md` § Preconditions. |
 | "Two out of three passed, that's basically a pass" | Require all three to pass. Partial passage is NULL_BASELINE_FAILED with the failing comparison named. |
 
 ## Red Flags
@@ -145,8 +141,8 @@ Emit `NULL_BASELINE_PASSED` only if all three comparisons passed. Otherwise emit
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-experiment_path="${1:?Usage: null-baseline-gate <experiment_path>}"
-result_file="${experiment_path}/null_baseline_result.json"
+worktree_path="${1:?Usage: null-baseline-gate <worktree_path>}"
+result_file="${worktree_path}/null_baseline_result.json"
 if [[ ! -f "$result_file" ]]; then
   echo "VERDICT: NULL_BASELINE_FAILED"
   exit 1
