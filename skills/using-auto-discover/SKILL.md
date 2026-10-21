@@ -7,7 +7,7 @@ description: "Bootstrap context for the auto-discover plugin, auto-loaded at ses
 
 # Using Auto Discover
 
-This plugin orchestrates evolutionary ML architectural discovery. It analyzes the mathematical structure of the task to identify what any solution requires — symmetries, invariances, information bounds, baseline failure modes — and produces structured research directions. Explore's investigation agents then turn those structural signals into concrete genome specs, each traceable to a checked property of the problem. The search evolves a population through spec classes until a two-tier convergence check says the space is covered. Only then does one candidate, the Pareto front's leader, submit to the end gates.
+This plugin orchestrates evolutionary ML architectural discovery. The research skill probes the problem, web-searches based on what the probes find, prototypes candidate architectures, and turns the findings into genome specs, each traceable to a logged finding. The search evolves a population through spec classes until a two-tier convergence check says the space is covered. Only then does one candidate, the Pareto front's leader, submit to the end gates.
 
 ## Skill Inventory
 
@@ -16,9 +16,7 @@ This plugin orchestrates evolutionary ML architectural discovery. It analyzes th
 | `auto-discover` | `/auto-discover` | Orchestrator: evolutionary loop, tree management |
 | `pre-register` | dispatched | Validates hypothesis, locks SHA-256 |
 | `establish-baseline` | dispatched | Trains null hypothesis, stores immutable baseline |
-| `analyze-problem` | dispatched | Structural analysis: symmetries, invariances, information requirements, baseline failure mode. Produces research directions |
-| `explore` | dispatched | Reads problem analysis signals, spawns investigation agents per structural direction, enforces divergence |
-| `propose-spec` | dispatched by explore | Translates research proposal into genome spec |
+| `research` | dispatched | Probes the problem, web-searches based on findings, prototypes architectures, produces genome specs |
 | `isolate-component` | dispatched | 3 component isolation gates |
 | `build-variant` | dispatched | Builds + trains one spec in isolated worktree |
 | `evaluate` | dispatched | Scores trained candidate, dynamics as diagnostics |
@@ -31,7 +29,7 @@ This plugin orchestrates evolutionary ML architectural discovery. It analyzes th
 
 ## Core Principles
 
-1. **Analyze, then assemble.** The problem analysis identifies what the task's mathematical structure requires of any solution. Explore reads those signals and assembles proposals. The creative work is grounded in checked structural properties, not in recalled knowledge of what architectures exist.
+1. **Research, don't prescribe.** Prescribe how to research, not what to find. The search space emerges from probing and web research, not from catalogs.
 
 2. **Pre-registration is immutable.** Hypothesis, metrics, and thresholds are locked behind a SHA-256 before any experiment runs.
 

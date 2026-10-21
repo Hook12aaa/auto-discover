@@ -76,20 +76,18 @@ Everything between the hypothesis and the terminal verdict is autonomous.
 flowchart TB
     H[hypothesis.yaml] --> PR[pre-register]
     PR --> BL[establish-baseline]
-    BL --> AP[analyze-problem]
-    AP --> TREE[init experiment tree]
+    BL --> TREE[init experiment tree]
 
     subgraph loop [Evolutionary search loop]
-        EX[explore] --> PS[propose-spec]
-        PS --> IC[isolate-component]
+        RS[research] --> IC[isolate-component]
         IC --> BV[build-variant]
         BV --> EV[evaluate]
-        EV --> RS[review-strategy]
-        RS --> CV{converge}
+        EV --> RV[review-strategy]
+        RV --> CV{converge}
     end
 
-    TREE --> EX
-    CV -->|EXPLORING| EX
+    TREE --> RS
+    CV -->|EXPLORING| RS
     CV -->|CONVERGED| NB[null-baseline-gate]
     NB --> RP[reproducibility-gate]
     RP --> JD[judge]
@@ -98,7 +96,7 @@ flowchart TB
 
     classDef stage fill:#1f1a14,stroke:#c98c3c,color:#f5ecd8;
     classDef decision fill:#2a1f14,stroke:#e8a94a,color:#f5ecd8;
-    class H,PR,BL,AP,TREE,EX,PS,IC,BV,EV,RS,NB,RP,JD,ER stage;
+    class H,PR,BL,TREE,RS,IC,BV,EV,RV,NB,RP,JD,ER stage;
     class CV decision;
 ```
 
@@ -106,15 +104,13 @@ flowchart TB
 
 The orchestrator dispatches each stage as an independent agent with its own worktree. Compute-heavy stages (baseline training, architecture building, isolation gates, reproducibility) run in isolated agents so the orchestrator's context stays lean. The orchestrator reads JSON results, aggregates the experiment tree, and dispatches the next stage.
 
-Each skill is a **contract**: typed inputs, typed outputs, a verdict, and a set of reference docs to consult. The domain knowledge — what to analyze, what components exist, what thresholds to use — lives in colocated `references/` directories as decision tables and catalogs, not in the skill's prose. Adding a new problem domain means adding sections to reference docs, not rewriting skills.
+Each skill is a **contract**: typed inputs, typed outputs, a verdict, and a set of reference docs to consult. The `research` skill probes the problem, web-searches based on what the probes find, and prototypes architectures before emitting genome specs. What to look for emerges from the problem itself, not from domain catalogs.
 
 | Skill | What it does |
 |---|---|
 | `pre-register` | Validates the hypothesis, rejects phenomenon-named metrics, locks behind SHA-256 |
 | `establish-baseline` | Trains the null hypothesis with derived hyperparameters. Dispatched as Agent with worktree |
-| `analyze-problem` | Structural analysis of the task: symmetries, invariances, information bounds, baseline failure mode. Produces research directions. Dispatched as Agent with worktree |
-| `explore` | Reads problem analysis signals, investigates structural directions, produces genome specs with divergence enforcement. Dispatched as Agent with worktree |
-| `propose-spec` | Translates a research proposal into a typed genome spec, checking composition-topology divergence |
+| `research` | Probes the problem, web-searches based on findings, prototypes architectures, produces genome specs. Dispatched as Agent with worktree |
 | `isolate-component` | 3 isolation gates (gradient flow, output range, toy convergence) before full training. Dispatched per-spec in parallel |
 | `build-variant` | Builds and trains one spec in an isolated worktree with chance-level early kill and patience-based stopping. Dispatched per-spec, streamed |
 | `evaluate` | Scores against pre-registered metrics with forensic validation. Training dynamics are a diagnostic, not the verdict |
@@ -127,28 +123,22 @@ Each skill is a **contract**: typed inputs, typed outputs, a verdict, and a set 
 
 ---
 
-## Architecture: contract-first, library-last
+## Architecture: research-driven, contract-gated
 
 v2 replaced the methodology-teaching skill style with a contract-first architecture inspired by [auto_model_trainer](https://github.com/Hook12aaa/auto-model-trainer).
 
-**The problem:** v1's skills prescribed *how to think* — Polya's four-step method, assigned analogy domains, mandatory reframing steps. This baked the methodology into the skills, making them domain-specific and brittle. The anti-retrieval gates prevented Claude from retrieving known *architectures*, but the skills themselves retrieved a known *creative methodology*.
+**The problem:** catalog-driven skills baked domain knowledge into reference tables — domain detection, analysis checklists, component vocabularies. The search could only find what the catalogs already named.
 
-**The fix:** Skills define contracts (inputs → outputs → verdicts). Domain knowledge lives in colocated reference docs as decision tables and catalogs. The orchestrator dispatches agents with explicit worktree isolation, keeping its own context lean.
+**The fix:** Skills define contracts (inputs → outputs → verdicts). The `research` skill prescribes how to research, not what to find: probe the problem, web-search based on what the probes reveal, prototype candidate architectures, and learn from the prototypes. The search space emerges from the problem. The orchestrator dispatches agents with explicit worktree isolation, keeping its own context lean.
 
 ```
 skills/
-  analyze-problem/
-    SKILL.md                           # contract: reads hypothesis + baseline, writes problem-analysis.json
+  research/
+    SKILL.md                           # contract: reads hypothesis + baseline + tree, writes genome specs
     references/
-      problem-analysis-schema.md       # formal JSON schema
-      domain-detection.md              # signal → domain type decision table
-      analysis-catalog.md              # per-domain structural checks (§ Mathematical, § Graph, § Sequence, ...)
-  explore/
-    SKILL.md                           # contract: reads analysis + tree, writes genome specs
-    references/
-      proposal-schema.md               # formal JSON schema
-      component-vocabulary.md          # per-domain operation catalogs
-      divergence-rules.md              # fingerprint computation, collision detection
+      research-protocol.md             # probe -> search -> prototype -> learn
+      findings-log-schema.md           # formal JSON schema
+      genome-spec-schema.md            # formal JSON schema
   auto-discover/
     SKILL.md                           # orchestrator contract
     references/
@@ -160,14 +150,7 @@ skills/
 
 ### Adding a new domain
 
-Adding a new problem domain (e.g., time-series, vision) requires reference doc sections, not skill rewrites:
-
-1. Add a row to `analyze-problem/references/domain-detection.md`
-2. Add a section to `analyze-problem/references/analysis-catalog.md`
-3. Add a section to `explore/references/component-vocabulary.md`
-4. Add a section to `build-variant/references/training-conventions.md`
-5. Add a section to `isolate-component/references/threshold-calibration.md`
-6. Add a section to `establish-baseline/references/baseline-conventions.md`
+The research skill discovers what the problem requires through probing and web search. No domain-specific reference docs are needed. The search space emerges from the problem.
 
 ### Dispatch model
 
@@ -176,7 +159,7 @@ The orchestrator uses two verbs:
 | Verb | Mechanism | When |
 |---|---|---|
 | **Invoke** | `Skill()` — runs inline | Fast stages needing orchestrator context (pre-register, converge, evidence-report) |
-| **Dispatch** | `Agent(isolation: "worktree")` — fresh agent | Any stage that composes or runs code (baseline, analyze, explore, build, isolate, evaluate, null-gate, repro-gate, judge) |
+| **Dispatch** | `Agent(isolation: "worktree")` — fresh agent | Any stage that composes or runs code (baseline, research, build, isolate, evaluate, null-gate, repro-gate, judge) |
 
 The orchestrator never runs Bash for code composition or training. All code execution happens in dispatched agents. Only JSON summaries return to the orchestrator.
 
@@ -190,8 +173,8 @@ The orchestrator never runs Bash for code composition or training. All code exec
 
 ## Design principles
 
-1. **Analyze, then assemble.** The problem analysis identifies what the task's mathematical structure requires. Explore reads those signals and assembles proposals from structural evidence, not recalled patterns.
-2. **Contract-first, library-last.** Skills define typed contracts. Domain knowledge lives in colocated reference docs.
+1. **Research, don't prescribe.** The search space emerges from probing and web research, not from catalogs or methodologies.
+2. **Contract-gated.** Skills define typed contracts; verdicts come from executed checks.
 3. **Execute, don't eyeball.** Every numerical check is a composed script that runs and returns JSON.
 4. **Structural distrust.** The proposer, the builder, and the judge are never the same agent.
 5. **Pre-registration is immutable.** Thesis, metrics, seeds, and budget are locked behind SHA-256 before any experiment runs.
@@ -243,8 +226,6 @@ No custom runtime, no bundled ML engine, no daemon. The plugin is Markdown and Y
 │   └── auto-discover.md   # /auto-discover slash command
 ├── hooks/                 # SessionStart bootstrap
 ├── skills/
-│   ├── analyze-problem/       # structural analysis + research directions
-│   │   └── references/        # problem-analysis-schema, domain-detection, analysis-catalog
 │   ├── auto-discover/         # orchestrator
 │   │   └── references/        # experiment-tree-schema, dispatch-contract, pipeline-overview
 │   ├── build-variant/         # worktree-isolated training
@@ -257,8 +238,6 @@ No custom runtime, no bundled ML engine, no daemon. The plugin is Markdown and Y
 │   │   └── references/        # training-diagnostics, metric-extraction
 │   ├── evidence-report/       # terminal verdict + evidence JSON
 │   │   └── references/        # evidence-schema, verdict-rules
-│   ├── explore/               # structural direction investigation
-│   │   └── references/        # proposal-schema, component-vocabulary, divergence-rules
 │   ├── isolate-component/     # 3 isolation gates
 │   │   └── references/        # isolation-gates, threshold-calibration
 │   ├── judge/                 # independent scoring agent
@@ -267,10 +246,10 @@ No custom runtime, no bundled ML engine, no daemon. The plugin is Markdown and Y
 │   │   └── references/        # null-comparisons
 │   ├── pre-register/          # hypothesis validation + SHA-256
 │   │   └── references/        # validation-rules
-│   ├── propose-spec/          # proposal → genome spec
-│   │   └── references/        # genome-spec-schema, translation-rules
 │   ├── reproducibility-gate/  # multi-seed variance check
 │   │   └── references/        # variance-rules
+│   ├── research/              # probe, web search, prototype, genome specs
+│   │   └── references/        # research-protocol, findings-log-schema, genome-spec-schema
 │   ├── review-strategy/       # Pareto + efficiency + stale detection
 │   │   └── references/        # pareto-computation, efficiency-thresholds
 │   └── using-auto-discover/   # session bootstrap

@@ -7,9 +7,8 @@ digraph auto_discover_evolutionary_loop {
 
   prereg [label="pre-register"];
   baseline [label="establish-baseline"];
-  analyze [label="analyze-problem"];
-  inittree [label="Initialize experiment-tree.json\n+ worktrees/"];
-  explore [label="explore\n(dispatches propose-spec)"];
+  inittree [label="Initialize experiment-tree.json\n+ worktrees/ + Stop hook"];
+  research [label="research\n(probe + web search + prototype)\nproduces genome specs in worktrees"];
   isolate [label="isolate-component\nper spec (concurrent)"];
   build [label="build-variant\nper COMPONENT_VALIDATED spec\n(parallel worktrees, streamed)"];
   evaluate [label="evaluate\nper completed variant\n(streamed)"];
@@ -25,9 +24,9 @@ digraph auto_discover_evolutionary_loop {
   diverged [label="BLOCKED_DIVERGENCE", shape=ellipse];
   blocked [label="BLOCKED_NEEDS_USER", shape=ellipse];
 
-  prereg -> baseline -> analyze -> inittree -> explore;
-  explore -> isolate;
-  explore -> evidence [label="BLOCKED"];
+  prereg -> baseline -> inittree -> research;
+  research -> isolate;
+  research -> evidence [label="BLOCKED"];
   isolate -> build [label="COMPONENT_VALIDATED"];
   isolate -> evidence [label="BLOCKED_NEEDS_USER"];
   build -> evaluate;
@@ -35,7 +34,7 @@ digraph auto_discover_evolutionary_loop {
   evaluate -> aggregate [label="REJECT / INCONCLUSIVE"];
   review -> aggregate;
   aggregate -> converge;
-  converge -> explore [label="EXPLORING"];
+  converge -> research [label="EXPLORING"];
   converge -> nullgate [label="CONVERGED"];
   converge -> evidence [label="BLOCKED"];
   nullgate -> evidence [label="NULL_BASELINE_FAILED"];
@@ -56,9 +55,7 @@ digraph auto_discover_evolutionary_loop {
 |---|---|---|---|
 | Lock hypothesis | pre-register | auto-discover | HYPOTHESIS_LOCKED, BLOCKED_NEEDS_USER |
 | Baseline | establish-baseline | auto-discover | BASELINE_LOCKED, BLOCKED_NEEDS_USER |
-| Problem analysis | analyze-problem | auto-discover | DONE, BLOCKED |
-| Direction exploration | explore | auto-discover | EXPLORING, BLOCKED |
-| Spec translation | propose-spec | explore | SPEC_EMITTED, BLOCKED |
+| Research | research | auto-discover | EXPLORING, BLOCKED |
 | Component isolation | isolate-component | auto-discover | COMPONENT_VALIDATED, BLOCKED_NEEDS_USER |
 | Build and train | build-variant | auto-discover | DONE, DONE_WITH_CONCERNS, BLOCKED |
 | Scoring | evaluate | auto-discover | ACCEPT, REJECT, INCONCLUSIVE |
@@ -83,5 +80,5 @@ digraph auto_discover_evolutionary_loop {
 |---|---|---|
 | CONVERGED | converge returned CONVERGED | null-baseline-gate |
 | BLOCKED (search) | converge returned BLOCKED | evidence-report |
-| BLOCKED (explore) | explore found no viable research thesis | evidence-report |
+| BLOCKED (research) | research found no viable research thesis | evidence-report |
 | BLOCKED (isolation) | every spec in a round failed isolate-component max_isolation_retries consecutive times | evidence-report |

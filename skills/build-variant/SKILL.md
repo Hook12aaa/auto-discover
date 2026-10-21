@@ -9,7 +9,7 @@ description: "Trigger /build-variant when auto-discover dispatches a genome spec
 
 ## Contract
 
-- **Reads**: `genome_spec.json` (inline or path from dispatch prompt; schema: `propose-spec/references/genome-spec-schema.md`), locked hypothesis fields from dispatch prompt (`thesis`, `training_budget`, `pre_registered_metrics`, `seeds`)
+- **Reads**: `genome_spec.json` (inline or path from dispatch prompt; schema: `research/references/genome-spec-schema.md`), locked hypothesis fields from dispatch prompt (`thesis`, `training_budget`, `pre_registered_metrics`, `seeds`)
 - **Writes**: `<worktree-path>/src/*` (composed code), `<worktree-path>/training_metrics.json`, `<worktree-path>/final_metrics.json`
 - **References**: `references/training-conventions.md`, `references/early-stopping-rules.md`
 - **Verdicts**: DONE, DONE_WITH_CONCERNS, BLOCKED

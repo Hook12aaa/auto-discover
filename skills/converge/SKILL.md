@@ -9,7 +9,7 @@ description: "Trigger /converge whenever auto-discover needs a search-level conv
 
 ## Contract
 
-- **Reads**: `.auto-discover/experiment-tree.json` (schema: `auto-discover/references/experiment-tree-schema.md`), `.auto-discover/problem-analysis.json`
+- **Reads**: `.auto-discover/experiment-tree.json` (schema: `auto-discover/references/experiment-tree-schema.md`)
 - **Writes**: `class_status` and `search_status` fields of `.auto-discover/experiment-tree.json`
 - **References**: `references/convergence-conditions.md`
 - **Verdicts**: EXPLORING, CONVERGED, BLOCKED

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **auto-discover** is a Claude Code plugin for evolutionary ML architectural discovery. It ships as pure Markdown/YAML skills with no shipped code -- Claude Code composes and executes every verification script in-context, at runtime, in the language the experiment already uses.
 
-Instead of training one genome spec through a linear pipeline, v2 evolves a population of candidates across an experiment tree. A problem analysis phase identifies what the task's mathematical structure requires — symmetries, invariances, information bounds, baseline failure modes — and produces structured research directions. Investigation agents then turn those structural signals into concrete genome specs, each traceable to a checked property of the problem. Convergence is judged at the level of the search space -- has this architecture family been exhausted, has that one been tried at all -- not at the level of a single training run's loss curve. Only the search's single leading candidate, chosen after convergence, submits to the null-baseline, reproducibility, and judge gates.
+Instead of training one genome spec through a linear pipeline, v2 evolves a population of candidates across an experiment tree. A research phase probes the problem, web-searches based on what the probes find, and prototypes candidate architectures, then emits concrete genome specs, each traceable to a logged finding. Convergence is judged at the level of the search space -- has this architecture family been exhausted, has that one been tried at all -- not at the level of a single training run's loss curve. Only the search's single leading candidate, chosen after convergence, submits to the null-baseline, reproducibility, and judge gates.
 
 ## Quick Start
 
@@ -17,12 +17,11 @@ Instead of training one genome spec through a linear pipeline, v2 evolves a popu
 Single entry point. Write a `hypothesis.yaml` declaring the thesis, null hypothesis, success/failure criteria, pre-registered metrics, seeds, training budget, and genome constraints. The orchestrator drives the evolutionary loop:
 
 ```
-pre-register -> establish-baseline -> analyze-problem -> initialize experiment tree
+pre-register -> establish-baseline -> initialize experiment tree
 -> LOOP {
-    explore (investigation agents per structural direction) -> propose-spec (per proposal)
-    -> isolate-component (per spec) -> build-variant (parallel worktrees)
-    -> evaluate (per variant) -> review-strategy (Pareto front, efficiency)
-    -> converge (two-tier search-level check)
+    research (probe + web search + prototype) -> isolate-component (per spec)
+    -> build-variant (parallel worktrees) -> evaluate (per variant)
+    -> review-strategy (Pareto front, efficiency) -> converge (two-tier search-level check)
     -> EXPLORING: loop again | CONVERGED: exit with the leading candidate
 }
 -> null-baseline-gate -> reproducibility-gate -> judge -> evidence-report
@@ -33,7 +32,7 @@ pre-register -> establish-baseline -> analyze-problem -> initialize experiment t
 - **DISCOVERY_CONFIRMED** -- `converge` returned CONVERGED and the leading candidate survived null-baseline-gate, reproducibility-gate, and judge.
 - **DISCOVERY_REFUTED** -- `converge` returned CONVERGED but the leading candidate failed null-baseline-gate, reproducibility-gate, or judge.
 - **BLOCKED_DIVERGENCE** -- `converge` itself returned BLOCKED because the experiment tree was unassessable, or the search exhausted every untried spec class without producing a single ACCEPTed candidate anywhere.
-- **BLOCKED_NEEDS_USER** -- the pipeline stopped on a missing hypothesis field, `explore` found no viable research thesis, or a round's specs all failed component isolation three times.
+- **BLOCKED_NEEDS_USER** -- the pipeline stopped on a missing hypothesis field, `research` found no viable research thesis, or a round's specs all failed component isolation three times.
 
 ## Key Constraint
 
@@ -41,7 +40,7 @@ The plugin ships Markdown only. There is no `scripts/` directory, no Python engi
 
 ## Plugin Structure
 
-- `skills/` -- SKILL.md contract files plus colocated `references/` directories with domain knowledge (decision tables, catalogs, schemas)
+- `skills/` -- SKILL.md contract files plus colocated `references/` directories with schemas and protocols
 - `commands/` -- `/auto-discover` slash command stub
 - `hooks/` -- SessionStart bootstrap that injects `using-auto-discover`
 - `bin/` -- shell checks that verify skill anatomy and verdict vocabulary
@@ -49,14 +48,7 @@ The plugin ships Markdown only. There is no `scripts/` directory, no Python engi
 
 ## Adding a New Domain
 
-Adding a new problem domain (e.g., time-series, vision) requires reference doc sections, not skill rewrites:
-
-1. Add a row to `skills/analyze-problem/references/domain-detection.md`
-2. Add a section to `skills/analyze-problem/references/analysis-catalog.md`
-3. Add a section to `skills/explore/references/component-vocabulary.md`
-4. Add a section to `skills/build-variant/references/training-conventions.md`
-5. Add a section to `skills/isolate-component/references/threshold-calibration.md`
-6. Add a section to `skills/establish-baseline/references/baseline-conventions.md`
+The `research` skill discovers what the problem requires through probing and web search. No domain-specific reference docs are needed.
 
 ## Key Concepts
 
@@ -64,9 +56,9 @@ Adding a new problem domain (e.g., time-series, vision) requires reference doc s
 
 `pre-register` locks the hypothesis's thesis, null hypothesis, criteria, metrics, seeds, and budget behind a SHA-256 hash before any experiment runs. Nothing downstream can add a metric, loosen a threshold, or fill in a missing field after the fact.
 
-### Analyze, then assemble
+### Research, don't prescribe
 
-The `analyze-problem` skill runs 7 structural checks on the task — decomposition, algebraic structure, symmetries, information requirements, compositional structure, baseline failure analysis, and theoretical constraints — and produces structured research directions. Each direction connects a checked observation to an architectural implication. `explore` reads these directions and spawns investigation agents that turn structural signals into concrete proposals. Every genome spec traces to a specific research direction, which traces to a specific structural property that was verified. The search runs as a population across the experiment tree, not one linear attempt.
+The `research` skill prescribes how to research, not what to find. It probes the problem and the baseline's failures, web-searches based on what the probes reveal, prototypes candidate architectures, and learns from the prototypes before emitting genome specs. Every spec traces to a logged finding. The search runs as a population across the experiment tree, not one linear attempt.
 
 ### Convergence is search-level, not training-run-level
 
@@ -88,9 +80,7 @@ Every architecture, however novel its framing, submits to the same mechanical is
 | `auto-discover` | Orchestrator -- manages the experiment tree, runs the evolutionary loop, dispatches the end gates |
 | `pre-register` | Validates the hypothesis YAML, computes and locks its SHA-256 |
 | `establish-baseline` | Trains the declared null hypothesis, stores an immutable baseline |
-| `analyze-problem` | Structural analysis of the task — symmetries, invariances, information requirements, baseline failure mode. Produces research directions |
-| `explore` | Reads problem analysis signals, spawns investigation agents per structural direction, enforces divergence |
-| `propose-spec` | Translates one research proposal into a typed genome spec within declared constraints |
+| `research` | Probes the problem, web-searches based on findings, prototypes architectures, produces genome specs |
 | `isolate-component` | Runs 3 isolation gates on a novel component before composition |
 | `build-variant` | Builds and trains one genome spec in an isolated worktree |
 | `evaluate` | Scores one trained candidate against pre-registered metrics; convergence type is a diagnostic, not the verdict |
@@ -106,7 +96,7 @@ Every architecture, however novel its framing, submits to the same mechanical is
 - **Execute, don't eyeball** -- every spec-class exhaustion check, null comparison, and variance calculation is a composed script, never a read-the-numbers judgment call
 - **Structural distrust** -- no agent both produces and approves its own work
 - **Pre-registration is immutable** -- the hypothesis, its metrics, and its thresholds are locked before any experiment runs
-- **Analyze, then assemble** -- structural analysis identifies what the task requires; explore assembles from those signals, not from recalled patterns
+- **Research, don't prescribe** -- the search space emerges from probing and web research, not from catalogs or methodologies
 - **Convergence is search-level, not training-run-level** -- a candidate's own training dynamics are a diagnostic, never the convergence signal
 - **Composed, not shipped** -- the plugin ships Markdown only; every verification script is written and run in-context
 

@@ -119,7 +119,7 @@ Read `references/evidence-schema.md` for the full schema and field sources. Writ
 
 ### 9. Emit Terminal Verdict
 
-Return exactly one of the four terminal verdicts, matching `terminal_verdict` in the JSON just written. On `DISCOVERY_REFUTED` with inconclusive evidence (no single clean failing gate, e.g. a marginal miss on the success threshold), offer the user the option to mutate the genome spec and re-enter the pipeline at `propose-spec` — do not decide this automatically.
+Return exactly one of the four terminal verdicts, matching `terminal_verdict` in the JSON just written. On `DISCOVERY_REFUTED` with inconclusive evidence (no single clean failing gate, e.g. a marginal miss on the success threshold), offer the user the option to mutate the genome spec and re-enter the pipeline through the `research` skill — do not decide this automatically.
 
 ## Gate Functions
 

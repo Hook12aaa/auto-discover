@@ -20,7 +20,7 @@ Each gate runs on the novel component alone, with no other part of the architect
 
 | Condition | Action |
 |---|---|
-| Any gate FAIL | Increment the consecutive-failure counter for `novel_component.type`. Re-invoke propose-spec with the failed gate's mode as a constraint mutation. |
+| Any gate FAIL | Increment the consecutive-failure counter for `novel_component.type`. Feed the failed gate's mode back to the research skill's inner loop as a constraint mutation. |
 | Gradient explosion | Narrow the relevant hyperparameter range. |
 | Output range failure | Propose a different normalization operation. |
 | Toy convergence failure | Mutate the component's operations or composition. |

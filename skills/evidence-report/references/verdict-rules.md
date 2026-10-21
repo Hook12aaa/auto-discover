@@ -20,7 +20,7 @@
 | Priority | Check | Result |
 |---|---|---|
 | 1 | converge returned BLOCKED because the tree was unassessable, or the search made a full pass through every UNTRIED class without a single ACCEPT in the tree | BLOCKED_DIVERGENCE |
-| 2 | pre-register or establish-baseline returned BLOCKED_NEEDS_USER; analyze-problem BLOCKED; explore BLOCKED with no viable thesis; every spec in a round failed isolate-component max_isolation_retries consecutive times | BLOCKED_NEEDS_USER |
+| 2 | pre-register or establish-baseline returned BLOCKED_NEEDS_USER; research BLOCKED with no viable thesis; every spec in a round failed isolate-component max_isolation_retries consecutive times | BLOCKED_NEEDS_USER |
 | 3 | converge CONVERGED AND NULL_BASELINE_PASSED AND REPRODUCIBILITY_PASSED AND JUDGE_CONFIRMS | DISCOVERY_CONFIRMED |
 | 4 | converge CONVERGED AND any of NULL_BASELINE_FAILED, REPRODUCIBILITY_FAILED, JUDGE_REFUTES | DISCOVERY_REFUTED, naming each failing gate |
 
@@ -36,4 +36,4 @@
 
 | Condition | Action |
 |---|---|
-| DISCOVERY_REFUTED with no single clean failing gate (marginal miss on the success threshold) | Offer the user the option to mutate the genome spec and re-enter at propose-spec. The user decides. |
+| DISCOVERY_REFUTED with no single clean failing gate (marginal miss on the success threshold) | Offer the user the option to mutate the genome spec and re-enter through the research skill. The user decides. |

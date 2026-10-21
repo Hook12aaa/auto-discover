@@ -12,7 +12,7 @@
     {
       "name": "auto-discover",
       "source": "./",
-      "description": "Evolutionary ML architecture discovery. Analyzes problem structure, evolves genome specs from structural signals, validates components in isolation, and judges candidates against null baselines across seeds.",
+      "description": "Evolutionary ML architecture discovery. Research-driven discovery: probes the problem, web-searches based on findings, prototypes architectures, evolves genome specs, validates components in isolation, and judges candidates against null baselines across seeds.",
       "category": "ml-experimentation",
       "tags": ["ml", "architecture-discovery", "experiment-orchestration", "hypothesis-testing"]
     }

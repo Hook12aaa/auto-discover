@@ -9,7 +9,7 @@ description: "Trigger /isolate-component when auto-discover needs to validate a 
 
 ## Contract
 
-- **Reads**: `genome_spec.json` from the experiment directory (schema: `propose-spec/references/genome-spec-schema.md`)
+- **Reads**: `genome_spec.json` from the experiment directory (schema: `research/references/genome-spec-schema.md`)
 - **Writes**: `.auto-discover/experiments/<hash>/gates/gradient_flow.json`, `.auto-discover/experiments/<hash>/gates/output_range.json`, `.auto-discover/experiments/<hash>/gates/toy_convergence.json`
 - **References**: `references/isolation-gates.md`, `references/threshold-calibration.md`
 - **Verdicts**: COMPONENT_VALIDATED, BLOCKED_NEEDS_USER
@@ -51,7 +51,7 @@ digraph isolate_component {
     write_all [label="Write all three\ngate JSON files"];
     validated [label="COMPONENT_VALIDATED", shape=ellipse];
     count_fail [label="Increment consecutive\nfailure count" shape=diamond];
-    reinvoke [label="Re-invoke propose-spec\nwith mutated constraints"];
+    reinvoke [label="Feed failure back to\nresearch inner loop"];
     blocked [label="BLOCKED_NEEDS_USER\n(max_isolation_retries\nconsecutive failures)", shape=ellipse];
 
     read_spec -> instantiate;
@@ -78,7 +78,7 @@ digraph isolate_component {
 3. Run Gate 2: Output Range per `references/isolation-gates.md`.
 4. Run Gate 3: Toy Convergence per `references/isolation-gates.md`.
 5. Write each gate's JSON verdict to the experiment directory.
-6. On any FAIL, mutate the genome spec per `references/isolation-gates.md` § Failure Handling and re-invoke propose-spec.
+6. On any FAIL, mutate the genome spec per `references/isolation-gates.md` § Failure Handling and feed the failure back to the research skill's inner loop.
 7. After the declared max_isolation_retries consecutive failures on the same component type, emit BLOCKED_NEEDS_USER.
 8. On all-PASS, emit COMPONENT_VALIDATED.
 
@@ -86,7 +86,7 @@ digraph isolate_component {
 
 ### 1. Read Genome Spec
 
-Read `genome_spec.json` from the experiment directory produced by propose-spec. The `novel_component` field names the class and ops to instantiate; the three gates below test that component alone, with no other part of the eventual architecture present.
+Read `genome_spec.json` from the experiment directory produced by the research skill. The `novel_component` field names the class and ops to instantiate; the three gates below test that component alone, with no other part of the eventual architecture present.
 
 ### 2. Gate 1: Gradient Flow
 
@@ -106,7 +106,7 @@ Read `references/isolation-gates.md` for the output format. Each gate writes its
 
 ### 6. On Failure, Mutate and Re-Propose
 
-Read `references/isolation-gates.md` § Failure Handling for mutation rules per failure mode. Invoke propose-spec with the failed gate's mode as a constraint mutation. The re-proposal is a fresh SPEC_EMITTED cycle, not a patch to the failed spec.
+Read `references/isolation-gates.md` § Failure Handling for mutation rules per failure mode. Feed the failed gate's mode back to the research skill's inner loop as a constraint mutation. The re-proposal is a fresh SPEC_EMITTED cycle, not a patch to the failed spec.
 
 ### 7. Track Consecutive Failures
 
@@ -121,7 +121,7 @@ Emit COMPONENT_VALIDATED only when all three gate JSON files exist and all three
 - BEFORE Gate 1: "Is the component instantiated alone, with no other architecture component present?"
 - BEFORE Gate 2: "Is the check applied to the full output tensor, not a sample?"
 - BEFORE Gate 3: "Is the toy task minimal and structured, not a stand-in for the real dataset?"
-- BEFORE re-invoking propose-spec: "Does the mutation address the specific gate that failed, not a generic re-roll?"
+- BEFORE feeding the failure back to the research skill: "Does the mutation address the specific gate that failed, not a generic re-roll?"
 - BEFORE emitting COMPONENT_VALIDATED: "Do all three gate JSON files exist with verdict PASS?"
 - BEFORE emitting BLOCKED_NEEDS_USER: "Has the consecutive-failure counter reached the declared max_isolation_retries for this component type?"
 
@@ -132,7 +132,7 @@ Emit COMPONENT_VALIDATED only when all three gate JSON files exist and all three
 | "The gradients looked fine in the full training run" | Run the component alone per `references/isolation-gates.md`. That run already had other components shaping the gradient. |
 | "The output range check is redundant with the loss not being NaN" | Check the component's own outputs directly per `references/isolation-gates.md`. A bounded loss can hide unbounded intermediate activations. |
 | "The declared micro-budget isn't enough to judge convergence" | Run the toy task per `references/isolation-gates.md`. A working component shows measurable progress fast. |
-| "I can retry the same spec, maybe it was a fluke" | Dispatch propose-spec with mutated constraints per `references/isolation-gates.md` § Failure Handling. Require a fresh spec, not a retry. |
+| "I can retry the same spec, maybe it was a fluke" | Feed the failure back to the research skill's inner loop with mutated constraints per `references/isolation-gates.md` § Failure Handling. Require a fresh spec, not a retry. |
 | "Almost at the failure limit, but keep going" | Halt at exactly the declared max_isolation_retries consecutive failures. Emit BLOCKED_NEEDS_USER at that count. |
 
 ## Red Flags

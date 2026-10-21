@@ -1,12 +1,12 @@
 # Genome Spec Schema
 
-Defines `genome_spec.json`, the typed architecture description propose-spec emits and isolate-component and build-variant consume.
+Defines `genome_spec.json`, the typed architecture description the research skill emits and isolate-component and build-variant consume.
 
 ```json
 {
   "spec_version": "string",
   "architecture_name": "string — derived from structural basis, never a known pattern name",
-  "structural_basis": "string — rd_N reference from problem-analysis.json",
+  "structural_basis": "string — probe_N or proto_N reference from the round's findings log (references/findings-log-schema.md)",
   "novel_component": {
     "type": "string",
     "class": "string",
@@ -55,7 +55,7 @@ Two specs with equal fingerprints belong to the same spec class. Hyperparameter 
 | Field | Constraint |
 |---|---|
 | `spec_version` | Schema version string. |
-| `structural_basis` | Must equal a `research_directions[].id` in `problem-analysis.json`. |
+| `structural_basis` | Must trace to a probe or prototype id in the round's `.auto-discover/research/round_N/findings.json`. |
 | `novel_component.ops_used` | Non-empty. Names come from the proposal's `required_operations`. |
 | `composition.layer_arrangement` | Non-empty. Lists ops for each of the `num_layers` layers and names every skip connection, branch point, and merge point. |
 | `composition.num_layers` | Positive integer within `genome_constraints` in the hypothesis. |

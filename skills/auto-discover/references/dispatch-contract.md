@@ -14,8 +14,7 @@ The orchestrator uses two verbs: **Invoke** (Skill tool, runs inline in the orch
 |---|---|---|---|---|
 | pre-register | Invoke | — | — | Reads and validates YAML, no compute |
 | establish-baseline | Dispatch | worktree | sonnet | Composes and trains the baseline — long-running compute |
-| analyze-problem | Dispatch | worktree | opus | Composes and runs verification scripts on toy instances |
-| explore | Dispatch (single) | worktree | opus | Reads full analysis + tree for cross-direction divergence, composes test code |
+| research | Dispatch | worktree | opus | Probes, web search, prototyping — needs worktree + full reasoning |
 | isolate-component | Dispatch (per spec) | worktree | sonnet | Each spec's isolation gates run independently |
 | build-variant | Dispatch (per spec) | worktree | sonnet | Each variant trains in its own worktree — the core parallelism |
 | evaluate | Dispatch (per variant) | worktree | sonnet | Composes and runs forensic validation scripts |
@@ -41,8 +40,7 @@ Subagents do not inherit the orchestrator's skills. The skill path in the dispat
 | Stage | Pre-create | Inline to dispatch | Verify on return |
 |---|---|---|---|
 | establish-baseline | `.auto-discover/baselines/` | hypothesis path, hypothesis.sha256 path | baseline_metrics.json exists |
-| analyze-problem | — | hypothesis path, hypothesis.sha256 path, baseline_metrics.json path | problem-analysis.json exists, status=DONE |
-| explore | — | problem-analysis.json path, experiment-tree.json path, round number | genome_spec.json exists per returned experiment hash |
+| research | — | hypothesis path, baseline path, experiment-tree path, round number, prior findings log path | genome_spec.json exists per returned hash in worktrees |
 | isolate-component | — | genome_spec.json path | gates/*.json exist, all PASS |
 | build-variant | `.auto-discover/worktrees/<hash>/` | genome_spec path, training_budget, pre_registered_metrics, seeds[0], genome_constraints, worktree path | training_metrics.json, final_metrics.json at worktree path |
 | evaluate | — | worktree path, pre_registered_metrics | EVALUATION.json with verdict |
@@ -60,7 +58,7 @@ Agents dispatched with `isolation: "worktree"` get an auto-cleaned worktree — 
 
 | Stage | Dispatch trigger |
 |---|---|
-| explore | converge returned EXPLORING, or the first loop entry |
+| research | converge returned EXPLORING, or the first loop entry |
 | isolate-component | genome_spec.json exists for specs in the round — dispatch all specs together in one Agent batch |
 | build-variant | That spec's own isolate-component returned COMPONENT_VALIDATED — dispatch immediately, do not wait for siblings |
 | evaluate | That variant's build-variant returned DONE or DONE_WITH_CONCERNS — dispatch immediately |
@@ -97,8 +95,7 @@ Agent(name: "eval-a1b2", isolation: "worktree", model: "sonnet",
 |---|---|
 | pre-register BLOCKED_NEEDS_USER | Stop. Invoke evidence-report with partial tree state. |
 | establish-baseline BLOCKED_NEEDS_USER | Stop. Invoke evidence-report with partial tree state. |
-| analyze-problem BLOCKED | Stop. Invoke evidence-report with partial tree state. |
-| explore BLOCKED | Invoke evidence-report with partial tree state. |
+| research BLOCKED | Invoke evidence-report with partial tree state. |
 | isolate-component BLOCKED_NEEDS_USER for every spec of a round | Invoke evidence-report with partial tree state. |
 | build-variant BLOCKED | Mark the node terminal in the tree. Do not dispatch evaluate. |
 | evaluate REJECT or INCONCLUSIVE | Mark the node terminal. Do not dispatch review-strategy. |

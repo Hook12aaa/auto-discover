@@ -80,7 +80,7 @@ digraph judge {
 
 ### 1. Dispatch a Separate Agent
 
-Dispatch the judge as a distinct agent instance from whichever agent proposed the genome spec (`propose-spec`) or built and trained the candidate (`build-variant`). If the orchestrator cannot verify the dispatched agent is separate, STOP — do not proceed with a self-scored result standing in for judgment.
+Dispatch the judge as a distinct agent instance from whichever agent proposed the genome spec (`research`) or built and trained the candidate (`build-variant`). If the orchestrator cannot verify the dispatched agent is separate, STOP — do not proceed with a self-scored result standing in for judgment.
 
 ### 2. Hand Off Bounded Inputs
 

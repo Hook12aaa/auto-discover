@@ -18,7 +18,7 @@ Any one firing settles the class. Every threshold comes from `search_config`, wi
 |---|---|
 | At least one Tier 1 condition fired | EXHAUSTED |
 | Has nodes in the tree, no Tier 1 condition fired | EXPLORING |
-| Implied by problem-analysis.json research directions, zero nodes in the tree | UNTRIED |
+| Implied by the research skill's findings, zero nodes in the tree | UNTRIED |
 
 ## Tier 2 — Cross-Class Coverage (all 3 required)
 
