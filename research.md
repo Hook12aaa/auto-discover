@@ -147,10 +147,77 @@ Competing perspectives prevent consensus at the thinking level. Three agents wit
 
 Process design beats gates. Gates catch integrity violations. But process drift is an assumption problem, and you solve it by designing the process so the assumption has no room.
 
+## The methodology question (v0.3)
+
+After the unconstrained run and the graph experiment, I thought the pipeline was in good shape. Two domains, two confirmed discoveries. But something kept bothering me.
+
+I looked at how auto_model_trainer worked — the project that came before this one. It used contract-first skills: typed inputs, typed outputs, a verdict. No teaching. The skill says what to check and what to emit. Claude figures out how to do it in the target project's language.
+
+auto-discover wasn't doing that. It was teaching methodology. Polya's heuristics, domain catalogs, analysis checklists. The skills said "here's how to think about this problem" instead of "here's the contract you need to satisfy." That's a form of retrieval too — not retrieving an architecture, but retrieving a methodology from the skill text and applying it pattern-match style.
+
+So v0.3 replaced the methodology-teaching skills with contract-first ones. Each skill became a typed contract pointing at colocated reference docs. analyze-problem got a domain registry. explore got a component catalog. propose-spec got a genome schema.
+
+It was cleaner. But the catalogs were still prescriptive. The domain registry listed what domains exist. The component catalog listed what components to try. The search could still only find what I'd thought to put in the tables. I'd moved from prescribing methodology to prescribing content, and the constraint was the same.
+
+I tested v0.3 on modular arithmetic again. 17,311 parameters. Failed reproducibility on a secondary metric. The catalog approach was strictly worse than the unconstrained v0.1 run.
+
+## Stripping the catalogs (v0.3 raw session)
+
+To prove the catalogs were the bottleneck, I ran a raw research session outside the formal pipeline. No catalogs, no domain registry, no component vocabulary. Just "here's the problem, probe it with scripts, web-search what you find, build something."
+
+It found a 124-parameter architecture. Better than v0.3's 17k. The formal pipeline with its catalogs was actively getting in the way.
+
+That was the moment the project's philosophy crystallised: prescribe how to research, not what to find. The search space should emerge from the problem, not from tables I wrote in advance.
+
+## Research-driven discovery (v0.4)
+
+v0.4 deleted three skills (analyze-problem, explore, propose-spec) and their eight reference docs. Replaced them with a single `research` skill that prescribes process:
+
+1. **Probe** the problem with short scripts (≤50 lines). Look at the data, the baseline's failures, the mathematical structure.
+2. **Web-search** based on what the probes find. Not "search for modular arithmetic architectures" but "the probes found circulant structure — search for that."
+3. **Prototype** candidate architectures (≤100 lines, ≤500 epochs). Test the idea before committing to a full training run.
+4. **Learn** from the prototype results. What worked, what didn't, why.
+5. **Diverge** — try something the previous rounds didn't try.
+
+Four hard gates: every genome spec traces to a logged finding, no catalog or registry references, no architecture-pattern terminology in spec names, structural_basis must cite specific probe or prototype IDs.
+
+I ran v0.4 on modular arithmetic. Four rounds:
+
+| Round | Accuracy | Params | What happened |
+|---|---|---|---|
+| R1 | 45.51% | — | Per-prime sine bilinear. Failed — approach too fragmented |
+| R2 | 95.73% | 29k | Frequency products work, but p=5 bottleneck |
+| R3 | 100% | 2,335 | Cross-prime sharing fixes p=5 |
+| R4 | 100% | 0 | Pure algebra — no learning needed |
+
+Each round learned from the previous round's failure. R1 failed, R2 diagnosed why. R2 had a bottleneck on p=5, R3 fixed it. R3 worked but had 2,335 parameters. R4 asked "can we go smaller?" and found the theoretical floor: a zero-parameter DFT of the addition table. The architecture isn't a neural network. It's the theorem implemented directly.
+
+The orchestrator ended at 25% context through 4 rounds plus all end gates. Subagent dispatch with worktree isolation held throughout. Compare that to v0.1 which crashed at 100% context in a single linear run.
+
+## The full version table
+
+| Version | What I prescribed | What it found | Params | Accuracy |
+|---|---|---|---|---|
+| v0.1 linear | Written code | cyclic attention | n/a | 22% |
+| v0.1 constrained | 6 allowed ops | strict bottleneck pipeline | 13,011 | 98.27% |
+| v0.1 unconstrained | Task + compute only | harmonic_phase_correlator | 160 | 100% |
+| v0.1 graph domain | Task + compute only | niche_partitioned_aggregator | 16,769 | 100% |
+| v0.3 catalogs | Domain registry + component catalog | catalog-derived architecture | 17,311 | REFUTED |
+| v0.3 raw session | Nothing (no pipeline) | probe-derived architecture | 124 | 100% |
+| v0.4 research pipeline | How to research | pure algebraic DFT | 0 | 100% |
+
+The trend is clear. Every version that prescribed less found something better. The catalogs (v0.3) were strictly worse than prescribing nothing (v0.3 raw). The research pipeline (v0.4) — which prescribes process but not content — found the theoretical optimum.
+
+## What I'm still figuring out
+
+Modular arithmetic has an exact analytical solution. Claude's training data covers the relevant group theory. I can't fully separate discovery from recall on this problem. The probes "discovered" the circulant structure, but Claude already knew what to probe for. The anti-retrieval discipline is softer in v0.4 than in v0.1 — Polya's method forced reframing, while the research skill just says "probe the problem."
+
+The next step is a domain where the answer isn't in the training data and a zero-parameter shortcut doesn't exist. Something where the model genuinely has to combine ideas in a way that hasn't been written down. That's where this either proves itself or doesn't.
+
 ## What I wish I could do better
 
-The search is still wave-based. Explore proposes a batch, all train, then converge checks. True concurrent tree search, where each spec streams independently and new specs spawn as results land, would be more efficient and produce better coverage.
+The search is still wave-based in some stages. True concurrent tree search, where each spec streams independently and new specs spawn as results land, would be more efficient and produce better coverage.
 
 Compute budget estimation is a guess. The hypothesis requires `max_compute_flops`, but estimating the right FLOP budget for an unknown architecture on an unknown task is itself a problem. A scaling-law pilot (accuracy vs compute doublings) would be the principled approach.
 
-Two experiments is the start of evidence, not a benchmark. The harness needs a proper benchmark suite across different mathematical domains to make the claims rigorous rather than anecdotal, this was a fun 3 day project however :)
+Three experiments across two domains is the start of evidence, not a benchmark. The harness needs a proper benchmark suite across different mathematical domains to make the claims rigorous rather than anecdotal. And the real test — a domain where the answer isn't in the training data — hasn't been run yet.
