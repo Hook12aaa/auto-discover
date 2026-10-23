@@ -205,14 +205,72 @@ The orchestrator ended at 25% context through 4 rounds plus all end gates. Subag
 | v0.3 catalogs | Domain registry + component catalog | catalog-derived architecture | 17,311 | REFUTED |
 | v0.3 raw session | Nothing (no pipeline) | probe-derived architecture | 124 | 100% |
 | v0.4 research pipeline | How to research | pure algebraic DFT | 0 | 100% |
+| v0.4 permutation groups | How to research | diagonal bilinear composition | 26 | REFUTED |
 
-The trend is clear. Every version that prescribed less found something better. The catalogs (v0.3) were strictly worse than prescribing nothing (v0.3 raw). The research pipeline (v0.4) — which prescribes process but not content — found the theoretical optimum.
+The trend is clear. Every version that prescribed less found something better. The catalogs (v0.3) were strictly worse than prescribing nothing (v0.3 raw). The research pipeline (v0.4) — which prescribes process but not content — found the theoretical optimum on modular arithmetic.
 
-## What I'm still figuring out
+But the permutation group run told a different, more important story.
 
-Modular arithmetic has an exact analytical solution. Claude's training data covers the relevant group theory. I can't fully separate discovery from recall on this problem. The probes "discovered" the circulant structure, but Claude already knew what to probe for. The anti-retrieval discipline is softer in v0.4 than in v0.1 — Polya's method forced reframing, while the research skill just says "probe the problem."
+## The permutation group experiment (v0.4)
 
-The next step is a domain where the answer isn't in the training data and a zero-parameter shortcut doesn't exist. Something where the model genuinely has to combine ideas in a way that hasn't been written down. That's where this either proves itself or doesn't.
+This was supposed to be the real test. Permutation composition on S_n is non-abelian — Fourier methods don't work the same way, there's no well-known optimal neural architecture for it, and a zero-parameter formula doesn't exist. If the pipeline could discover something here, it would prove domain-agnosticism.
+
+The MLP baseline was strong: 99.96% accuracy across S_5 through S_8, about 400k total parameters. Near-perfect memorization.
+
+The research agent ran 5 probes in Round 1:
+
+1. Position dependency — does each output depend on a fixed pair of inputs? **No.** Dynamic routing required.
+2. Commutativity — how non-commutative is S_n? **95% at S_5, 99.98% at S_8.** Inputs must be treated asymmetrically.
+3. Matrix structure — does Ma @ Mb equal the output? **No**, only at the commuting fraction.
+4. Reversed matrix product — does Mb @ Ma equal the output? **Yes. 100% match across all orders.**
+5. Selection structure — is there a row-selection decomposition? **Yes**, output[i] = a[b[i]].
+
+Probe 4 was the structural breakthrough. The research agent independently derived that permutation composition is exactly the reversed matrix product in the permutation matrix representation. This is correct group theory — and it didn't come from a catalog or a methodology. It came from running a 50-line script that tested both multiplication orders.
+
+Three rounds, 5 spec classes, 7 variants. The search explored bilinear matrix products, soft routing, temperature-scaled routing, Sinkhorn doubly-stochastic routing, and diagonal bilinear interactions. The Pareto leader was a diagonal bilinear architecture: B @ diag(d) @ A, 26 parameters, 100% accuracy.
+
+Then the null-baseline gate killed it.
+
+## The null-baseline catch
+
+The shuffled-label control — same architecture, randomly permuted training labels — also achieved 100% accuracy at epoch 0. Before any training.
+
+Why: B @ diag(d) @ A has exactly one nonzero entry per row at the correct column, for any positive d. The argmax always picks the right answer. The architecture doesn't use the training labels at all. Accuracy is a structural property of the input representation, not something the network learned.
+
+The null-baseline gate correctly identified: "this isn't a discovery, it's a tautology in the representation." DISCOVERY_REFUTED.
+
+| Comparison | Candidate | Control |
+|---|---|---|
+| vs shuffled labels | 100% | 100% (at epoch 0) |
+| vs constant output | 100% | 0% |
+| vs MLP baseline | 100% (26 params) | 99.96% (400k params) |
+
+The architecture is correct. It's 15,343x more parameter-efficient than the baseline. But it doesn't learn — it hard-codes the answer in the representation. The gate caught the difference between "correct" and "discovered."
+
+## Why the refutation matters more than the confirmation
+
+The modular arithmetic run produced DISCOVERY_CONFIRMED. That's a good result. But the permutation group run produced something better: a system that catches its own trivial solutions.
+
+Most automated ML systems report successes. When they find something that works, they declare victory. The null-baseline gate doesn't care that the architecture works — it cares whether the architecture's performance is attributable to learning. An architecture that works at epoch 0 with shuffled labels hasn't learned anything. It's encoded the answer in its structure.
+
+This is the same thermometer problem from the early experiments, but at a deeper level. The pipeline found the right mathematics (reversed matrix multiplication), built the right architecture (bilinear composition), got perfect accuracy (100%), and then correctly rejected itself because the accuracy wasn't earned through learning.
+
+A system that only confirms is useless. A system that confirms when the evidence supports it (modular arithmetic) and refutes when the evidence doesn't (permutation groups) is doing science.
+
+## The full version table
+
+| Version | What I prescribed | What it found | Params | Verdict |
+|---|---|---|---|---|
+| v0.1 linear | Written code | cyclic attention | n/a | 22% acc |
+| v0.1 constrained | 6 allowed ops | strict bottleneck pipeline | 13,011 | 98.27% acc |
+| v0.1 unconstrained | Task + compute only | harmonic_phase_correlator | 160 | CONFIRMED |
+| v0.1 graph domain | Task + compute only | niche_partitioned_aggregator | 16,769 | CONFIRMED |
+| v0.3 catalogs | Domain registry + component catalog | catalog-derived architecture | 17,311 | REFUTED |
+| v0.3 raw session | Nothing (no pipeline) | probe-derived architecture | 124 | 100% acc |
+| v0.4 mod arithmetic | How to research | pure algebraic DFT | 0 | CONFIRMED |
+| v0.4 permutation groups | How to research | diagonal bilinear composition | 26 | REFUTED |
+
+Two confirmations, two refutations. The pipeline discriminates.
 
 ## What I wish I could do better
 
@@ -220,4 +278,6 @@ The search is still wave-based in some stages. True concurrent tree search, wher
 
 Compute budget estimation is a guess. The hypothesis requires `max_compute_flops`, but estimating the right FLOP budget for an unknown architecture on an unknown task is itself a problem. A scaling-law pilot (accuracy vs compute doublings) would be the principled approach.
 
-Three experiments across two domains is the start of evidence, not a benchmark. The harness needs a proper benchmark suite across different mathematical domains to make the claims rigorous rather than anecdotal. And the real test — a domain where the answer isn't in the training data — hasn't been run yet.
+The permutation group result raises a deeper question: when the problem has an exact algebraic solution that can be hard-coded in the input representation, is it even possible for a neural architecture to "discover" something beyond the hard-coded answer? The hypothesis asked for an architecture that "learns" composition — but the problem's structure makes learning unnecessary. That might mean the hypothesis was wrong, not the pipeline.
+
+Four experiments across three domains is better evidence than two, but a proper benchmark suite would make the claims rigorous.
