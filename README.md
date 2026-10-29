@@ -31,14 +31,17 @@ The current version (v0.4) builds on that. It prescribes process — probe, sear
 | v0.3 | Prescribe nothing | 124 | Raw probing found better than catalogs |
 | v0.4 | Prescribe process | 0 | Iterative failure found the exact algebraic solution |
 | v0.4 (permutations) | Prescribe process | 26 | Found exact algebra, gates caught it was trivial. REFUTED |
+| v0.4 (GCD) | Prescribe process | 4,605 | 100% accuracy, 5 rounds of evolution. REFUTED (technical) |
 
-The less I told the agent what to find, the better it found things. But the permutation group run told the more important story.
+The less I told the agent what to find, the better it found things. But the refutations tell the more important story.
 
 I ran v0.4 on permutation composition in S_n (n=5,6,7,8) — non-abelian groups where Fourier methods don't apply and there's no well-known optimal architecture. The research agent probed the problem with scripts and independently derived that composition = reversed matrix multiplication (Mb @ Ma). It built a 26-parameter architecture that got 100% accuracy across all group orders, against a 400k-parameter MLP baseline.
 
 Then the null-baseline gate killed it. The shuffled-label control also scored 100% — at epoch 0, before any training. The architecture B @ diag(d) @ A gives the correct answer for any positive d. Accuracy was a structural property of the input representation, not something the network learned. DISCOVERY_REFUTED.
 
-That refutation matters more than the modular arithmetic confirmation. A system that only confirms is a search engine. A system that finds the right mathematics, builds the right architecture, gets perfect accuracy, and then correctly rejects itself because the accuracy wasn't earned through learning — that's doing science. The pipeline discriminates: two confirmations (modular arithmetic, graph distinguishability) and two refutations (v0.2 catalogs, v0.4 permutations), each for different structural reasons.
+Then I ran it on GCD — computing the greatest common divisor of two integers in [1, 1000]. An ICLR 2024 paper proves that standard architectures don't learn GCD; they hack around it by counting trailing zeros. No published architecture solves it. The MLP baseline plateaued at 60.86% (majority-class prediction). Over 5 research rounds, the agent independently discovered the prime factorization decomposition, evolved it from 31k params at 99.6% through a co-divisibility bypass at 8.6k params and 99.999%, to a final 4,605-parameter architecture with 100% accuracy across all 5 seeds. The null-baseline gate passed. But the reproducibility gate caught that one seed converged ~10 epochs slower than the others — 24% variance on compute_to_threshold_ratio, exceeding the pre-registered 10% tolerance. DISCOVERY_REFUTED on a technicality, with perfect primary-metric reproducibility.
+
+Two kinds of refutation, one pipeline. Permutation groups: the architecture doesn't learn, it hard-codes. GCD: the architecture learns perfectly, but convergence speed varies. The pipeline discriminates: two confirmations (modular arithmetic, graph distinguishability) and three refutations (v0.2 catalogs, v0.4 permutations — structural, v0.4 GCD — technical), each for different reasons.
 
 If you're thinking about trying it, the idea is simple: write a hypothesis, point the plugin at it, and let it run.
 
